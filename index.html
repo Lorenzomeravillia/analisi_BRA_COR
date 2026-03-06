@@ -939,27 +939,38 @@
             headers = originalRows[0];
             dbg(`Colonne trovate: ${headers.length}`, 'info');
 
-            const colOrder = findColumnIndex(headers, ['customer order', 'ordine cliente', 'ordine', 'order']);
-            const colPlant = findColumnIndex(headers, ['plant', 'impianto', 'stabilimento']);
-            const colArticle = findColumnIndex(headers, ['articolo', 'article', 'material', 'materiale']);
+            // FORZA LA COLONNA A PER GLI ORDINI
+            colOrderIdx = 0; 
+            const expectedOrderHeader = 'customer order';
+            const actualOrderHeader = String(headers[0] || '').toLowerCase().trim();
 
-            if (colOrder !== -1) {
-                colOrderIdx = colOrder;
-                dbg(`Colonna Ordine auto-rilevata: [${colOrder}] "${headers[colOrder]}"`, 'ok');
-            } else {
-                colOrderIdx = 0;
-                dbg(`Colonna Ordine non trovata per nome → fallback indice 0 ("${headers[0]}")`, 'warn');
+            let proceed = true;
+            if (actualOrderHeader !== expectedOrderHeader) {
+                proceed = confirm(`Attenzione: l'intestazione della colonna A è "${headers[0] || '(vuota)'}" invece di "Customer order".\nSei sicuro di voler procedere usando comunque la colonna A come numero ordine?`);
             }
+
+            if (!proceed) {
+                showLoader(false);
+                dbg('Operazione annullata dall\'utente.', 'warn');
+                return;
+            }
+
+            dbg(`Colonna Ordine forzata a: [0] "${headers[0]}"`, 'ok');
+
+            // Cerca le altre colonne
+            const colPlant = findColumnIndex(headers, ['sales bom compliant plant list', 'plant', 'impianto']);
+            const colArticle = findColumnIndex(headers, ['item description', 'articolo', 'descrizione articolo']);
+
             if (colPlant !== -1) {
                 colPlantIdx = colPlant;
-                dbg(`Colonna Plant auto-rilevata: [${colPlant}] "${headers[colPlant]}"`, 'ok');
+                dbg(`Colonna Plant rilevata: [${colPlant}] "${headers[colPlant]}"`, 'ok');
             } else {
                 colPlantIdx = 2;
                 dbg(`Colonna Plant non trovata per nome → fallback indice 2 ("${headers[2] || 'N/A'}")`, 'warn');
             }
             if (colArticle !== -1) {
                 colArticleIdx = colArticle;
-                dbg(`Colonna Articolo auto-rilevata: [${colArticle}] "${headers[colArticle]}"`, 'ok');
+                dbg(`Colonna Articolo rilevata: [${colArticle}] "${headers[colArticle]}"`, 'ok');
             } else {
                 colArticleIdx = 10;
                 dbg(`Colonna Articolo non trovata per nome → fallback indice 10 ("${headers[10] || 'N/A'}")`, 'warn');
@@ -974,10 +985,16 @@
     }
 
     function findColumnIndex(headersArr, candidates) {
+        // Cerca la parola esatta
+        for (let i = 0; i < headersArr.length; i++) {
+            const h = String(headersArr[i] || '').toLowerCase().trim();
+            if (candidates.includes(h)) return i;
+        }
+        // Se fallisce, cerca se la colonna CONTIENE la parola
         for (let i = 0; i < headersArr.length; i++) {
             const h = String(headersArr[i] || '').toLowerCase().trim();
             for (const c of candidates) {
-                if (h === c || h.includes(c)) return i;
+                if (h.includes(c)) return i;
             }
         }
         return -1;
