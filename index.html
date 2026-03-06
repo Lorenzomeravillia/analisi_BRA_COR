@@ -258,6 +258,161 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .loader-text { font-size: 0.88rem; color: var(--accent); font-weight: 500; }
 
+        /* RECALCULATE BAR */
+        .recalc-bar {
+            display: none;
+            margin-bottom: 24px;
+            background: var(--amber-bg);
+            border: 1px solid var(--amber-border);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .recalc-bar.visible { display: flex; }
+        .recalc-bar .recalc-text {
+            font-size: 0.84rem;
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .recalc-bar .recalc-text svg { flex-shrink: 0; }
+        .btn-recalc {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 22px;
+            border-radius: 8px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            background: var(--accent);
+            color: white;
+            transition: background 0.15s, transform 0.1s;
+            box-shadow: 0 1px 3px rgba(74,124,255,0.3);
+        }
+        .btn-recalc:hover { background: var(--accent-hover); }
+        .btn-recalc:active { transform: scale(0.97); }
+
+        /* SHEET SELECTOR MODAL */
+        .sheet-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(15,17,22,0.55);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .sheet-modal-overlay.open { display: flex; }
+        .sheet-modal-box {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 420px;
+            padding: 28px;
+            animation: modalIn 0.2s ease-out;
+        }
+        .sheet-modal-box h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .sheet-modal-box p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+        }
+        .sheet-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sheet-list li {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: background 0.15s, border-color 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sheet-list li:hover {
+            background: var(--accent-light);
+            border-color: var(--accent-border);
+            color: var(--accent);
+        }
+        .sheet-list li .sheet-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        /* DEBUG PANEL */
+        .debug-panel {
+            display: none;
+            margin-bottom: 24px;
+            background: #1a1d23;
+            border-radius: var(--radius);
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+        }
+        .debug-panel.visible { display: block; }
+        .debug-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            background: #2a2d33;
+            color: #9aa0ab;
+        }
+        .debug-header span { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .debug-toggle-btn {
+            background: none;
+            border: none;
+            color: #9aa0ab;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .debug-toggle-btn:hover { background: #3a3d43; }
+        .debug-log {
+            padding: 10px 14px;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #c8cdd5;
+            line-height: 1.7;
+        }
+        .debug-log .log-ok { color: #4ade80; }
+        .debug-log .log-warn { color: #fbbf24; }
+        .debug-log .log-err { color: #f87171; }
+        .debug-log .log-info { color: #60a5fa; }
+
         /* RESULTS */
         #resultsArea { display: none; }
         #resultsArea.visible { display: block; }
@@ -275,21 +430,9 @@
             gap: 20px;
             flex-wrap: wrap;
         }
-        .baseline-label h2 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text);
-        }
-        .baseline-label p {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
-        .baseline-value {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        .baseline-label h2 { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+        .baseline-label p { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+        .baseline-value { display: flex; flex-direction: column; align-items: center; }
         .baseline-number {
             font-family: 'JetBrains Mono', monospace;
             font-size: 2.4rem;
@@ -299,10 +442,7 @@
             transition: color 0.2s, transform 0.15s;
             line-height: 1;
         }
-        .baseline-number:hover {
-            color: var(--accent-hover);
-            transform: scale(1.05);
-        }
+        .baseline-number:hover { color: var(--accent-hover); transform: scale(1.05); }
         .baseline-hint {
             font-size: 0.68rem;
             text-transform: uppercase;
@@ -372,24 +512,8 @@
             border-radius: 4px;
             text-decoration: none;
         }
-        .clickable:hover {
-            background: var(--accent-light);
-            color: var(--accent-hover);
-        }
+        .clickable:hover { background: var(--accent-light); color: var(--accent-hover); }
         .zero-val { color: var(--text-muted); font-weight: 400; }
-
-        /* Stat pills for table rows */
-        .priority-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.72rem;
-            font-weight: 600;
-        }
-        .pb-p1 { background: #dcfce7; color: #166534; }
-        .pb-p2 { background: #fef9c3; color: #854d0e; }
-        .pb-p3 { background: #ffedd5; color: #9a3412; }
-        .pb-p4 { background: #fee2e2; color: #991b1b; }
 
         /* MODAL */
         .modal-overlay {
@@ -430,56 +554,33 @@
         .modal-head h3 { font-size: 1rem; font-weight: 700; }
         .modal-head p { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
         .modal-close {
-            width: 34px;
-            height: 34px;
-            border: none;
-            background: var(--surface-alt);
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 34px; height: 34px;
+            border: none; background: var(--surface-alt);
+            border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
             color: var(--text-secondary);
             transition: background 0.15s, color 0.15s;
             flex-shrink: 0;
         }
         .modal-close:hover { background: #eee; color: var(--text); }
-        .modal-body {
-            flex: 1;
-            overflow: auto;
-            padding: 16px 24px;
-        }
+        .modal-body { flex: 1; overflow: auto; padding: 16px 24px; }
         .modal-body table { font-size: 0.78rem; }
         .modal-body thead th {
-            background: #fef9c3;
-            color: #713f12;
-            position: sticky;
-            top: 0;
-            z-index: 2;
+            background: #fef9c3; color: #713f12;
+            position: sticky; top: 0; z-index: 2;
         }
-        .modal-body tbody td {
-            padding: 6px 12px;
-            white-space: nowrap;
-        }
+        .modal-body tbody td { padding: 6px 12px; white-space: nowrap; }
         .modal-foot {
             padding: 14px 24px;
             border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            gap: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0; gap: 12px;
         }
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 18px;
-            border-radius: 8px;
-            font-size: 0.84rem;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 18px; border-radius: 8px;
+            font-size: 0.84rem; font-weight: 600;
+            border: none; cursor: pointer;
             transition: background 0.15s, transform 0.1s;
             font-family: inherit;
         }
@@ -489,38 +590,22 @@
         .btn-gray { background: #e5e7eb; color: var(--text); }
         .btn-gray:hover { background: #d1d5db; }
         .truncation-notice {
-            font-size: 0.78rem;
-            color: var(--amber);
-            font-weight: 500;
-            text-align: center;
-            padding: 10px;
-            background: var(--amber-bg);
-            border: 1px solid var(--amber-border);
-            border-radius: 6px;
+            font-size: 0.78rem; color: var(--amber); font-weight: 500;
+            text-align: center; padding: 10px;
+            background: var(--amber-bg); border: 1px solid var(--amber-border);
+            border-radius: 6px; margin-top: 8px;
         }
 
-        /* Summary bar below baseline */
-        .summary-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
+        /* Summary bar */
+        .summary-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
         .stat-chip {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.82rem;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 18px;
+            display: flex; align-items: center; gap: 10px; font-size: 0.82rem;
         }
         .stat-chip .stat-num {
             font-family: 'JetBrains Mono', monospace;
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--text);
+            font-weight: 700; font-size: 1.1rem; color: var(--text);
         }
         .stat-chip .stat-label { color: var(--text-secondary); }
     </style>
@@ -590,6 +675,27 @@
         </div>
     </div>
 
+    <!-- RECALCULATE BAR -->
+    <div class="recalc-bar" id="recalcBar">
+        <div class="recalc-text">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Parametri modificati — ricalcola per aggiornare i risultati
+        </div>
+        <button class="btn-recalc" onclick="recalculate()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M20.49 9A9 9 0 005.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 014.51 15"/></svg>
+            Ricalcola
+        </button>
+    </div>
+
+    <!-- DEBUG PANEL -->
+    <div class="debug-panel" id="debugPanel">
+        <div class="debug-header">
+            <span>Debug Log</span>
+            <button class="debug-toggle-btn" onclick="clearDebug()">Pulisci</button>
+        </div>
+        <div class="debug-log" id="debugLog"></div>
+    </div>
+
     <!-- LOADER -->
     <div class="loader-wrap" id="loader">
         <div class="spinner"></div>
@@ -598,7 +704,6 @@
 
     <!-- RESULTS -->
     <div id="resultsArea">
-        <!-- Baseline -->
         <div class="baseline-card">
             <div class="baseline-label">
                 <h2>Ordini Baseline (Pronti)</h2>
@@ -610,10 +715,8 @@
             </div>
         </div>
 
-        <!-- Summary -->
         <div class="summary-bar" id="summaryBar"></div>
 
-        <!-- Priority Table -->
         <div class="table-card">
             <div class="table-header">
                 <h2>Matrice Priorità per Articolo</h2>
@@ -635,6 +738,15 @@
                 </table>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- SHEET SELECTOR MODAL -->
+<div class="sheet-modal-overlay" id="sheetModal">
+    <div class="sheet-modal-box">
+        <h3>Seleziona il foglio dati</h3>
+        <p>Il file contiene più fogli. Quale contiene i dati degli ordini?</p>
+        <ul class="sheet-list" id="sheetList"></ul>
     </div>
 </div>
 
@@ -670,19 +782,38 @@
     // ═══════════════════════════════════════════
     //  STATE
     // ═══════════════════════════════════════════
-    let rawData = [];
     let headers = [];
     let dictOrdiniReali = new Set();
-    let dictOrdini = new Map(); // Ordine -> Map(Articolo -> rowCount)
+    let dictOrdini = new Map();
     let originalRows = [];
+    let currentWorkbook = null; // keep workbook in memory for sheet re-selection
 
     let currentExportData = [];
     let currentModalContext = { type: '', article: '', priority: '' };
 
     // Column indices (0-based) – matching VBA col A=0, C=2, K=10
-    const colOrderIdx = 0;
-    const colPlantIdx = 2;
-    const colArticleIdx = 10;
+    let colOrderIdx = 0;
+    let colPlantIdx = 2;
+    let colArticleIdx = 10;
+
+    let dataIsLoaded = false; // tracks if we have data ready for recalc
+
+    // ═══════════════════════════════════════════
+    //  DEBUG LOGGER
+    // ═══════════════════════════════════════════
+    function dbg(msg, type = 'info') {
+        const panel = document.getElementById('debugPanel');
+        const log = document.getElementById('debugLog');
+        panel.classList.add('visible');
+        const ts = new Date().toLocaleTimeString('it-IT');
+        const cls = type === 'ok' ? 'log-ok' : type === 'warn' ? 'log-warn' : type === 'err' ? 'log-err' : 'log-info';
+        log.innerHTML += `<div class="${cls}">[${ts}] ${msg}</div>`;
+        log.scrollTop = log.scrollHeight;
+        console.log(`[RND ${type.toUpperCase()}]`, msg);
+    }
+    function clearDebug() {
+        document.getElementById('debugLog').innerHTML = '';
+    }
 
     // ═══════════════════════════════════════════
     //  UI HELPERS
@@ -693,7 +824,31 @@
         $('loader').classList.toggle('active', show);
     }
 
-    // Drag-and-drop enhancement
+    // Show recalc bar when params change (only if data is loaded)
+    function onParamChange() {
+        if (dataIsLoaded) {
+            $('recalcBar').classList.add('visible');
+        }
+    }
+
+    $('isRealToggle').addEventListener('change', onParamChange);
+    $('prefixInput').addEventListener('input', onParamChange);
+    document.querySelectorAll('input[name="countMethod"]').forEach(r => {
+        r.addEventListener('change', onParamChange);
+    });
+
+    // Recalculate button
+    function recalculate() {
+        if (!originalRows || originalRows.length === 0) return;
+        $('recalcBar').classList.remove('visible');
+        showLoader(true);
+        dbg('Ricalcolo con nuovi parametri...', 'info');
+        setTimeout(() => {
+            processData(originalRows);
+        }, 50);
+    }
+
+    // Drag-and-drop
     const uploadZone = $('uploadZone');
     ['dragenter', 'dragover'].forEach(evt => {
         uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
@@ -712,44 +867,55 @@
         if (e.target.files[0]) handleFile(e.target.files[0]);
     });
 
-    // Close modal on Escape
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
     // ═══════════════════════════════════════════
-    //  FILE HANDLING & PARSING
+    //  FILE HANDLING & SHEET SELECTION
     // ═══════════════════════════════════════════
     function handleFile(file) {
         if (!file) return;
 
-        // Show file name feedback
         $('fileLoadedName').textContent = file.name;
         $('fileLoadedMsg').classList.add('visible');
-
         $('resultsArea').classList.remove('visible');
+        $('recalcBar').classList.remove('visible');
+        dataIsLoaded = false;
         showLoader(true);
+        clearDebug();
+        dbg(`File caricato: "${file.name}" (${(file.size / 1024).toFixed(1)} KB)`, 'info');
 
         setTimeout(() => {
             const reader = new FileReader();
+            reader.onerror = function() {
+                dbg('Errore nella lettura del file!', 'err');
+                showLoader(false);
+            };
             reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    currentWorkbook = workbook;
 
-                const targetSheetName = workbook.SheetNames.find(
-                    name => name.toLowerCase().trim() === "customer order"
-                );
-                if (!targetSheetName) {
-                    alert('Errore: Impossibile trovare il foglio "Customer order".');
-                    showLoader(false);
-                    return;
-                }
+                    const sheetNames = workbook.SheetNames;
+                    dbg(`Fogli trovati nel file: ${sheetNames.length} → [${sheetNames.join(', ')}]`, 'ok');
 
-                const worksheet = workbook.Sheets[targetSheetName];
-                originalRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                    if (sheetNames.length === 0) {
+                        dbg('Il file non contiene fogli!', 'err');
+                        showLoader(false);
+                        return;
+                    }
 
-                if (originalRows.length > 0) {
-                    headers = originalRows[0];
-                    processData(originalRows);
-                } else {
+                    if (sheetNames.length === 1) {
+                        // Un solo foglio: usalo direttamente
+                        dbg(`Foglio unico "${sheetNames[0]}" — uso automatico`, 'ok');
+                        loadSheet(sheetNames[0]);
+                    } else {
+                        // Più fogli: mostra selettore
+                        showLoader(false);
+                        showSheetSelector(sheetNames);
+                    }
+                } catch (err) {
+                    dbg(`Errore nel parsing del file: ${err.message}`, 'err');
                     showLoader(false);
                 }
             };
@@ -757,16 +923,113 @@
         }, 80);
     }
 
+    function showSheetSelector(sheetNames) {
+        const list = $('sheetList');
+        list.innerHTML = '';
+        sheetNames.forEach((name, idx) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="sheet-icon">${idx + 1}</span> ${name}`;
+            li.onclick = () => {
+                $('sheetModal').classList.remove('open');
+                showLoader(true);
+                dbg(`Foglio selezionato dall'utente: "${name}"`, 'ok');
+                setTimeout(() => loadSheet(name), 50);
+            };
+            list.appendChild(li);
+        });
+        $('sheetModal').classList.add('open');
+    }
+
+    function loadSheet(sheetName) {
+        try {
+            const worksheet = currentWorkbook.Sheets[sheetName];
+            originalRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+            dbg(`Righe totali lette (incluso header): ${originalRows.length}`, 'info');
+
+            if (originalRows.length === 0) {
+                dbg('Il foglio è vuoto!', 'err');
+                showLoader(false);
+                return;
+            }
+
+            headers = originalRows[0];
+            dbg(`Colonne trovate: ${headers.length}`, 'info');
+
+            // Log prime colonne per debug
+            const previewCols = headers.slice(0, Math.min(15, headers.length)).map((h, i) => `[${i}]="${h}"`).join('  ');
+            dbg(`Header (prime 15): ${previewCols}`, 'info');
+
+            // Auto-detect colonne per nome (fallback su indici fissi)
+            const colOrder = findColumnIndex(headers, ['customer order', 'ordine cliente', 'ordine', 'order']);
+            const colPlant = findColumnIndex(headers, ['plant', 'impianto', 'stabilimento']);
+            const colArticle = findColumnIndex(headers, ['articolo', 'article', 'material', 'materiale']);
+
+            if (colOrder !== -1) {
+                colOrderIdx = colOrder;
+                dbg(`Colonna Ordine auto-rilevata: [${colOrder}] "${headers[colOrder]}"`, 'ok');
+            } else {
+                colOrderIdx = 0;
+                dbg(`Colonna Ordine non trovata per nome → fallback indice 0 ("${headers[0]}")`, 'warn');
+            }
+            if (colPlant !== -1) {
+                colPlantIdx = colPlant;
+                dbg(`Colonna Plant auto-rilevata: [${colPlant}] "${headers[colPlant]}"`, 'ok');
+            } else {
+                colPlantIdx = 2;
+                dbg(`Colonna Plant non trovata per nome → fallback indice 2 ("${headers[2] || 'N/A'}")`, 'warn');
+            }
+            if (colArticle !== -1) {
+                colArticleIdx = colArticle;
+                dbg(`Colonna Articolo auto-rilevata: [${colArticle}] "${headers[colArticle]}"`, 'ok');
+            } else {
+                colArticleIdx = 10;
+                dbg(`Colonna Articolo non trovata per nome → fallback indice 10 ("${headers[10] || 'N/A'}")`, 'warn');
+            }
+
+            // Preview prima riga dati
+            if (originalRows.length > 1) {
+                const row1 = originalRows[1];
+                dbg(`Riga 1 dati → Ordine="${row1[colOrderIdx]}" | Plant="${row1[colPlantIdx]}" | Articolo="${row1[colArticleIdx]}"`, 'info');
+            }
+
+            processData(originalRows);
+
+        } catch (err) {
+            dbg(`Errore nel caricamento del foglio: ${err.message}`, 'err');
+            showLoader(false);
+        }
+    }
+
+    function findColumnIndex(headersArr, candidates) {
+        for (let i = 0; i < headersArr.length; i++) {
+            const h = String(headersArr[i] || '').toLowerCase().trim();
+            for (const c of candidates) {
+                if (h === c || h.includes(c)) return i;
+            }
+        }
+        return -1;
+    }
+
     // ═══════════════════════════════════════════
     //  CORE BUSINESS LOGIC
-    //  (Mirrors VBA: plant filter, dictOrdini, dictOrdiniReali)
     // ═══════════════════════════════════════════
     function processData(data) {
         dictOrdiniReali.clear();
         dictOrdini.clear();
 
         const isReal = $('isRealToggle').checked;
-        const prefixInput = $('prefixInput').value.trim().replace(/%/g, '').replace(/\*/g, '');
+        const prefixRaw = $('prefixInput').value.trim();
+        const prefixInput = prefixRaw.replace(/%/g, '').replace(/\*/g, '');
+
+        dbg(`Parametri → Caso Reale: ${isReal} | Prefisso: "${prefixRaw}" → filtro contains: "${prefixInput}" | Metodo: ${document.querySelector('input[name="countMethod"]:checked').value}`, 'info');
+
+        let rowsProcessed = 0;
+        let rowsSkippedNoOrder = 0;
+        let rowsSkippedBraCor = 0;
+        let rowsSkippedEmptyPlant = 0;
+        let rowsIncluded = 0;
+        let articlesMatchedFilter = 0;
 
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
@@ -774,26 +1037,37 @@
             const plant = String(row[colPlantIdx] || "").trim();
             const articolo = String(row[colArticleIdx] || "").trim();
 
-            if (!ordine) continue;
+            rowsProcessed++;
 
-            // VBA: Not plant Like "*BRA | COR*" And plant <> ""
-            // The VBA pattern literally matches "BRA | COR" as a substring due to Like syntax.
-            // Intent: exclude plants containing BRA or COR. HTML uses regex OR.
+            if (!ordine) { rowsSkippedNoOrder++; continue; }
+
             const isBraCor = /BRA|COR/i.test(plant);
 
-            if (!isBraCor && plant !== "") {
-                dictOrdiniReali.add(ordine);
+            if (isBraCor) { rowsSkippedBraCor++; continue; }
+            if (plant === "") { rowsSkippedEmptyPlant++; continue; }
 
-                if (!dictOrdini.has(ordine)) {
-                    dictOrdini.set(ordine, new Map());
-                }
-                const orderMap = dictOrdini.get(ordine);
+            dictOrdiniReali.add(ordine);
+            rowsIncluded++;
 
-                if (isReal || articolo.includes(prefixInput)) {
-                    orderMap.set(articolo, (orderMap.get(articolo) || 0) + 1);
-                }
+            if (!dictOrdini.has(ordine)) {
+                dictOrdini.set(ordine, new Map());
+            }
+            const orderMap = dictOrdini.get(ordine);
+
+            if (isReal || articolo.includes(prefixInput)) {
+                orderMap.set(articolo, (orderMap.get(articolo) || 0) + 1);
+                articlesMatchedFilter++;
             }
         }
+
+        dbg(`Righe processate: ${rowsProcessed} | Incluse: ${rowsIncluded} | No ordine: ${rowsSkippedNoOrder} | BRA/COR: ${rowsSkippedBraCor} | Plant vuoto: ${rowsSkippedEmptyPlant}`, 'info');
+        dbg(`Ordini reali (non bloccati): ${dictOrdiniReali.size} | Ordini in dictOrdini: ${dictOrdini.size} | Match filtro articolo: ${articlesMatchedFilter}`, 'info');
+
+        if (dictOrdini.size === 0 && !isReal && prefixInput) {
+            dbg(`⚠ dictOrdini è vuoto! Nessun articolo contiene "${prefixInput}". Prova ad attivare "Caso Reale" oppure cambia il prefisso.`, 'warn');
+        }
+
+        dataIsLoaded = true;
         generateReport(data);
     }
 
@@ -803,32 +1077,26 @@
     function generateReport(data) {
         const countMethod = document.querySelector('input[name="countMethod"]:checked').value;
 
-        // All unique orders in file
         const allUniqueOrders = new Set();
         for (let i = 1; i < data.length; i++) {
             const ord = String(data[i][colOrderIdx] || "").trim();
             if (ord) allUniqueOrders.add(ord);
         }
 
-        // Baseline: orders NOT in dictOrdiniReali
         let baselineCount = 0;
         allUniqueOrders.forEach(ord => {
             if (!dictOrdiniReali.has(ord)) baselineCount++;
         });
         $('baselineCount').textContent = baselineCount;
 
-        // Build articleStats
         const articleStats = {};
-        let totalOrders = 0;
-        let totalArticles = 0;
 
         dictOrdini.forEach((orderMap, ordine) => {
-            const missingCount = orderMap.size; // distinct families in this order
+            const missingCount = orderMap.size;
 
             orderMap.forEach((rowCount, articolo) => {
                 if (!articleStats[articolo]) {
                     articleStats[articolo] = { p1: 0, p2: 0, p3: 0, p4: 0, total: 0 };
-                    totalArticles++;
                 }
                 const weight = (countMethod === 'righe') ? rowCount : 1;
 
@@ -840,7 +1108,6 @@
             });
         });
 
-        // Sort: total desc, then alphabetical
         const sortedArticles = Object.keys(articleStats).sort((a, b) => {
             if (articleStats[b].total !== articleStats[a].total) {
                 return articleStats[b].total - articleStats[a].total;
@@ -848,9 +1115,10 @@
             return a.localeCompare(b);
         });
 
+        dbg(`Report generato: ${sortedArticles.length} articoli in tabella | Baseline: ${baselineCount} | Metodo: ${countMethod}`, 'ok');
+
         // Summary bar
-        const summaryBar = $('summaryBar');
-        summaryBar.innerHTML = `
+        $('summaryBar').innerHTML = `
             <div class="stat-chip">
                 <span class="stat-num">${allUniqueOrders.size}</span>
                 <span class="stat-label">Ordini nel file</span>
@@ -869,30 +1137,37 @@
         const tbody = $('reportTableBody');
         tbody.innerHTML = '';
 
-        const fragment = document.createDocumentFragment();
-        sortedArticles.forEach(art => {
-            const s = articleStats[art];
-            const tr = document.createElement('tr');
+        if (sortedArticles.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
+                Nessun articolo trovato con i parametri attuali. Prova ad attivare "Caso Reale" o a modificare il prefisso.
+            </td></tr>`;
+        } else {
+            const fragment = document.createDocumentFragment();
+            sortedArticles.forEach(art => {
+                const s = articleStats[art];
+                const tr = document.createElement('tr');
 
-            const cellClass = (val, art, prio) => {
-                if (val > 0) return `<td class="clickable" onclick="triggerDrillDown('priority','${art.replace(/'/g, "\\'")}',${prio})">${val}</td>`;
-                return `<td class="zero-val">0</td>`;
-            };
+                const cell = (val, art, prio) => {
+                    if (val > 0) return `<td class="clickable" onclick="triggerDrillDown('priority','${art.replace(/'/g, "\\'")}',${prio})">${val}</td>`;
+                    return `<td class="zero-val">0</td>`;
+                };
 
-            tr.innerHTML =
-                `<td>${art}</td>` +
-                cellClass(s.p1, art, 1) +
-                cellClass(s.p2, art, 2) +
-                cellClass(s.p3, art, 3) +
-                cellClass(s.p4, art, 4) +
-                `<td class="col-total ${s.total > 0 ? 'clickable' : 'zero-val'}" ${s.total > 0 ? `onclick="triggerDrillDown('priority','${art.replace(/'/g, "\\'")}',0)"` : ''}>${s.total}</td>`;
+                tr.innerHTML =
+                    `<td>${art}</td>` +
+                    cell(s.p1, art, 1) +
+                    cell(s.p2, art, 2) +
+                    cell(s.p3, art, 3) +
+                    cell(s.p4, art, 4) +
+                    `<td class="col-total ${s.total > 0 ? 'clickable' : 'zero-val'}" ${s.total > 0 ? `onclick="triggerDrillDown('priority','${art.replace(/'/g, "\\'")}',0)"` : ''}>${s.total}</td>`;
 
-            fragment.appendChild(tr);
-        });
-        tbody.appendChild(fragment);
+                fragment.appendChild(tr);
+            });
+            tbody.appendChild(fragment);
+        }
 
         showLoader(false);
         $('resultsArea').classList.add('visible');
+        $('recalcBar').classList.remove('visible');
     }
 
     // ═══════════════════════════════════════════
@@ -949,7 +1224,6 @@
         thead.innerHTML = '';
         tbody.innerHTML = '';
 
-        // Header row
         const trHead = document.createElement('tr');
         hdrs.forEach(h => {
             const th = document.createElement('th');
@@ -958,7 +1232,6 @@
         });
         thead.appendChild(trHead);
 
-        // Rows — limit to 2000 for DOM performance
         const DISPLAY_LIMIT = 2000;
         const rowsToDisplay = rows.slice(0, DISPLAY_LIMIT);
         const fragment = document.createDocumentFragment();
