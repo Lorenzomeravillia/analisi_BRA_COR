@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report RND Ordini</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --surface-alt: #f7f8fa;
+            --border: #e2e5ea;
+            --border-focus: #4a7cff;
+            --text: #1a1d23;
+            --text-secondary: #5f6673;
+            --text-muted: #9aa0ab;
+            --accent: #4a7cff;
+            --accent-hover: #3a66e0;
+            --accent-light: #eef2ff;
+            --accent-border: #c7d5ff;
+            --green: #16a34a;
+            --green-bg: #f0fdf4;
+            --green-border: #bbf7d0;
+            --green-hover: #15803d;
+            --amber: #d97706;
+            --amber-bg: #fffbeb;
+            --amber-border: #fde68a;
+            --red: #dc2626;
+            --red-bg: #fef2f2;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+            --radius: 10px;
+            --radius-lg: 14px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+
+        /* HEADER */
+        header {
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        header h1 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--text);
+        }
+        header .badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            background: var(--accent-light);
+            color: var(--accent);
+            border: 1px solid var(--accent-border);
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+        header p {
+            width: 100%;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        /* CONTROLS PANEL */
+        .controls-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 28px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            overflow: hidden;
+        }
+        @media (max-width: 900px) {
+            .controls-panel { grid-template-columns: 1fr; }
+        }
+        .control-section {
+            padding: 22px 24px;
+            display: flex;
+            flex-direction: column;
+        }
+        .control-section + .control-section {
+            border-left: 1px solid var(--border);
+        }
+        @media (max-width: 900px) {
+            .control-section + .control-section {
+                border-left: none;
+                border-top: 1px solid var(--border);
+            }
+        }
+        .control-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+        .control-body { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+        /* Toggle switch */
+        .toggle-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #ccd0d8;
+            border-radius: 22px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .toggle-slider::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent);
+        }
+        .toggle-switch input:checked + .toggle-slider::after {
+            transform: translateX(18px);
+        }
+        .toggle-text { font-size: 0.85rem; color: var(--text); line-height: 1.4; }
+        .toggle-text strong { font-weight: 600; }
+        .toggle-text small { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
+
+        /* Prefix input */
+        .prefix-input {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            padding: 7px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--surface-alt);
+            margin-top: 4px;
+        }
+        .prefix-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(74,124,255,0.12);
+        }
+
+        /* Radio buttons */
+        .radio-group { display: flex; flex-direction: column; gap: 8px; }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-size: 0.85rem;
+        }
+        .radio-label:hover { background: var(--surface-alt); }
+        .radio-label input[type="radio"] {
+            accent-color: var(--accent);
+            width: 16px;
+            height: 16px;
+        }
+        .radio-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; padding-left: 4px; }
+
+        /* Upload zone */
+        .upload-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            min-height: 110px;
+            position: relative;
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+        .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .upload-icon { color: var(--text-muted); margin-bottom: 8px; transition: color 0.2s; }
+        .upload-zone:hover .upload-icon { color: var(--accent); }
+        .upload-text { font-size: 0.82rem; color: var(--text-secondary); text-align: center; }
+        .upload-text strong { color: var(--accent); }
+        .file-loaded {
+            font-size: 0.78rem;
+            color: var(--green);
+            font-weight: 600;
+            margin-top: 6px;
+            display: none;
+            align-items: center;
+            gap: 4px;
+        }
+        .file-loaded.visible { display: flex; }
+
+        /* Loader */
+        .loader-wrap {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+            padding: 20px;
+        }
+        .loader-wrap.active { display: flex; }
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text { font-size: 0.88rem; color: var(--accent); font-weight: 500; }
+
+        /* RESULTS */
+        #resultsArea { display: none; }
+        #resultsArea.visible { display: block; }
+
+        /* Baseline card */
+        .baseline-card {
+            background: var(--accent-light);
+            border: 1px solid var(--accent-border);
+            border-radius: var(--radius-lg);
+            padding: 22px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .baseline-label h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .baseline-label p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .baseline-value {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .baseline-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            cursor: pointer;
+            transition: color 0.2s, transform 0.15s;
+            line-height: 1;
+        }
+        .baseline-number:hover {
+            color: var(--accent-hover);
+            transform: scale(1.05);
+        }
+        .baseline-hint {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        /* Priority table */
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .table-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+        .table-header h2 { font-size: 1rem; font-weight: 700; }
+        .table-header p { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+        thead th {
+            padding: 10px 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            background: var(--surface-alt);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            text-align: center;
+        }
+        thead th:first-child { text-align: left; }
+        thead th.col-total { background: #eef0f4; }
+        tbody td {
+            padding: 10px 20px;
+            text-align: center;
+            border-bottom: 1px solid #f0f1f3;
+            color: var(--text-secondary);
+        }
+        tbody td:first-child {
+            text-align: left;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--text);
+        }
+        tbody td.col-total {
+            background: var(--surface-alt);
+            font-weight: 700;
+            color: var(--text);
+        }
+        tbody tr:hover { background: #fafbfc; }
+        .clickable {
+            color: var(--accent);
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .clickable:hover {
+            background: var(--accent-light);
+            color: var(--accent-hover);
+        }
+        .zero-val { color: var(--text-muted); font-weight: 400; }
+
+        /* Stat pills for table rows */
+        .priority-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+        .pb-p1 { background: #dcfce7; color: #166534; }
+        .pb-p2 { background: #fef9c3; color: #854d0e; }
+        .pb-p3 { background: #ffedd5; color: #9a3412; }
+        .pb-p4 { background: #fee2e2; color: #991b1b; }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(15,17,22,0.55);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 1280px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            animation: modalIn 0.2s ease-out;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-head {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .modal-head h3 { font-size: 1rem; font-weight: 700; }
+        .modal-head p { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .modal-close {
+            width: 34px;
+            height: 34px;
+            border: none;
+            background: var(--surface-alt);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+        .modal-close:hover { background: #eee; color: var(--text); }
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 16px 24px;
+        }
+        .modal-body table { font-size: 0.78rem; }
+        .modal-body thead th {
+            background: #fef9c3;
+            color: #713f12;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .modal-body tbody td {
+            padding: 6px 12px;
+            white-space: nowrap;
+        }
+        .modal-foot {
+            padding: 14px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            gap: 12px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            font-family: inherit;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-green { background: var(--green); color: white; }
+        .btn-green:hover { background: var(--green-hover); }
+        .btn-gray { background: #e5e7eb; color: var(--text); }
+        .btn-gray:hover { background: #d1d5db; }
+        .truncation-notice {
+            font-size: 0.78rem;
+            color: var(--amber);
+            font-weight: 500;
+            text-align: center;
+            padding: 10px;
+            background: var(--amber-bg);
+            border: 1px solid var(--amber-border);
+            border-radius: 6px;
+        }
+
+        /* Summary bar below baseline */
+        .summary-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .stat-chip {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.82rem;
+        }
+        .stat-chip .stat-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+        .stat-chip .stat-label { color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <header>
+        <h1>Analisi Report RND</h1>
+        <span class="badge">Client-Side</span>
+        <p>Elaborazione sicura e locale. Nessun dato trasmesso a server esterni.</p>
+    </header>
+
+    <!-- CONTROLS -->
+    <div class="controls-panel">
+        <!-- 1. Logica -->
+        <div class="control-section">
+            <div class="control-label">1 &middot; Logica Famiglie</div>
+            <div class="control-body">
+                <label class="toggle-row">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="isRealToggle">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <div class="toggle-text">
+                        <strong>Caso Reale</strong>
+                        <small>Valuta tutte le famiglie di mobili presenti. Se disattivato, filtra per prefisso:</small>
+                    </div>
+                </label>
+                <input type="text" id="prefixInput" value="%TL1X" class="prefix-input" placeholder="Prefisso Famiglia">
+            </div>
+        </div>
+
+        <!-- 2. Unità -->
+        <div class="control-section">
+            <div class="control-label">2 &middot; Unità di misura</div>
+            <div class="control-body">
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="countMethod" value="ordini" checked>
+                        Conta <strong>Ordini</strong>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="countMethod" value="righe">
+                        Conta <strong>Righe</strong> totali
+                    </label>
+                </div>
+                <div class="radio-hint">Determina i valori nella matrice e l'ordinamento decrescente.</div>
+            </div>
+        </div>
+
+        <!-- 3. Upload -->
+        <div class="control-section">
+            <div class="control-label">3 &middot; Carica file</div>
+            <div class="control-body">
+                <div class="upload-zone" id="uploadZone">
+                    <input id="fileUpload" type="file" accept=".xlsx,.xls,.csv" />
+                    <svg class="upload-icon" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <div class="upload-text"><strong>Carica file</strong> &nbsp;.xlsx, .xls, .csv</div>
+                    <div class="file-loaded" id="fileLoadedMsg">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span id="fileLoadedName"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOADER -->
+    <div class="loader-wrap" id="loader">
+        <div class="spinner"></div>
+        <span class="loader-text">Elaborazione in corso…</span>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="resultsArea">
+        <!-- Baseline -->
+        <div class="baseline-card">
+            <div class="baseline-label">
+                <h2>Ordini Baseline (Pronti)</h2>
+                <p>Ordini privi di blocchi — nessuna riga nei plant esclusi</p>
+            </div>
+            <div class="baseline-value">
+                <span class="baseline-number" id="baselineCount" onclick="triggerDrillDown('baseline', null, null)" title="Clicca per espandere">0</span>
+                <span class="baseline-hint">Clicca per il dettaglio</span>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-bar" id="summaryBar"></div>
+
+        <!-- Priority Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <h2>Matrice Priorità per Articolo</h2>
+                <p>Ordinamento decrescente per totale, poi alfabetico.</p>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align:left">Articolo Target</th>
+                            <th>Priorità 1</th>
+                            <th>Priorità 2</th>
+                            <th>Priorità 3</th>
+                            <th>Priorità &gt;3</th>
+                            <th class="col-total">Totale</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DRILL-DOWN MODAL -->
+<div class="modal-overlay" id="drillDownModal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <div>
+                <h3 id="modalTitle">Dettaglio Ordini</h3>
+                <p id="modalInfo"></p>
+            </div>
+            <button class="modal-close" onclick="closeModal()" title="Chiudi">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <table>
+                <thead id="modalThead"></thead>
+                <tbody id="modalTbody"></tbody>
+            </table>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-green" onclick="downloadExcel()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Scarica Excel (.xlsx)
+            </button>
+            <button class="btn btn-gray" onclick="closeModal()">Chiudi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ═══════════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════════
+    let rawData = [];
+    let headers = [];
+    let dictOrdiniReali = new Set();
+    let dictOrdini = new Map(); // Ordine -> Map(Articolo -> rowCount)
+    let originalRows = [];
+
+    let currentExportData = [];
+    let currentModalContext = { type: '', article: '', priority: '' };
+
+    // Column indices (0-based) – matching VBA col A=0, C=2, K=10
+    const colOrderIdx = 0;
+    const colPlantIdx = 2;
+    const colArticleIdx = 10;
+
+    // ═══════════════════════════════════════════
+    //  UI HELPERS
+    // ═══════════════════════════════════════════
+    const $ = id => document.getElementById(id);
+
+    function showLoader(show) {
+        $('loader').classList.toggle('active', show);
+    }
+
+    // Drag-and-drop enhancement
+    const uploadZone = $('uploadZone');
+    ['dragenter', 'dragover'].forEach(evt => {
+        uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+        uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); });
+    });
+    uploadZone.addEventListener('drop', e => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            $('fileUpload').files = files;
+            handleFile(files[0]);
+        }
+    });
+    $('fileUpload').addEventListener('change', e => {
+        if (e.target.files[0]) handleFile(e.target.files[0]);
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    // ═══════════════════════════════════════════
+    //  FILE HANDLING & PARSING
+    // ═══════════════════════════════════════════
+    function handleFile(file) {
+        if (!file) return;
+
+        // Show file name feedback
+        $('fileLoadedName').textContent = file.name;
+        $('fileLoadedMsg').classList.add('visible');
+
+        $('resultsArea').classList.remove('visible');
+        showLoader(true);
+
+        setTimeout(() => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const targetSheetName = workbook.SheetNames.find(
+                    name => name.toLowerCase().trim() === "customer order"
+                );
+                if (!targetSheetName) {
+                    alert('Errore: Impossibile trovare il foglio "Customer order".');
+                    showLoader(false);
+                    return;
+                }
+
+                const worksheet = workbook.Sheets[targetSheetName];
+                originalRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+                if (originalRows.length > 0) {
+                    headers = originalRows[0];
+                    processData(originalRows);
+                } else {
+                    showLoader(false);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }, 80);
+    }
+
+    // ═══════════════════════════════════════════
+    //  CORE BUSINESS LOGIC
+    //  (Mirrors VBA: plant filter, dictOrdini, dictOrdiniReali)
+    // ═══════════════════════════════════════════
+    function processData(data) {
+        dictOrdiniReali.clear();
+        dictOrdini.clear();
+
+        const isReal = $('isRealToggle').checked;
+        const prefixInput = $('prefixInput').value.trim().replace(/%/g, '').replace(/\*/g, '');
+
+        for (let i = 1; i < data.length; i++) {
+            const row = data[i];
+            const ordine = String(row[colOrderIdx] || "").trim();
+            const plant = String(row[colPlantIdx] || "").trim();
+            const articolo = String(row[colArticleIdx] || "").trim();
+
+            if (!ordine) continue;
+
+            // VBA: Not plant Like "*BRA | COR*" And plant <> ""
+            // The VBA pattern literally matches "BRA | COR" as a substring due to Like syntax.
+            // Intent: exclude plants containing BRA or COR. HTML uses regex OR.
+            const isBraCor = /BRA|COR/i.test(plant);
+
+            if (!isBraCor && plant !== "") {
+                dictOrdiniReali.add(ordine);
+
+                if (!dictOrdini.has(ordine)) {
+                    dictOrdini.set(ordine, new Map());
+                }
+                const orderMap = dictOrdini.get(ordine);
+
+                if (isReal || articolo.includes(prefixInput)) {
+                    orderMap.set(articolo, (orderMap.get(articolo) || 0) + 1);
+                }
+            }
+        }
+        generateReport(data);
+    }
+
+    // ═══════════════════════════════════════════
+    //  REPORT GENERATION
+    // ═══════════════════════════════════════════
+    function generateReport(data) {
+        const countMethod = document.querySelector('input[name="countMethod"]:checked').value;
+
+        // All unique orders in file
+        const allUniqueOrders = new Set();
+        for (let i = 1; i < data.length; i++) {
+            const ord = String(data[i][colOrderIdx] || "").trim();
+            if (ord) allUniqueOrders.add(ord);
+        }
+
+        // Baseline: orders NOT in dictOrdiniReali
+        let baselineCount = 0;
+        allUniqueOrders.forEach(ord => {
+            if (!dictOrdiniReali.has(ord)) baselineCount++;
+        });
+        $('baselineCount').textContent = baselineCount;
+
+        // Build articleStats
+        const articleStats = {};
+        let totalOrders = 0;
+        let totalArticles = 0;
+
+        dictOrdini.forEach((orderMap, ordine) => {
+            const missingCount = orderMap.size; // distinct families in this order
+
+            orderMap.forEach((rowCount, articolo) => {
+                if (!articleStats[articolo]) {
+                    articleStats[articolo] = { p1: 0, p2: 0, p3: 0, p4: 0, total: 0 };
+                    totalArticles++;
+                }
+                const weight = (countMethod === 'righe') ? rowCount : 1;
+
+                articleStats[articolo].total += weight;
+                if (missingCount === 1) articleStats[articolo].p1 += weight;
+                else if (missingCount === 2) articleStats[articolo].p2 += weight;
+                else if (missingCount === 3) articleStats[articolo].p3 += weight;
+                else if (missingCount > 3) articleStats[articolo].p4 += weight;
+            });
+        });
+
+        // Sort: total desc, then alphabetical
+        const sortedArticles = Object.keys(articleStats).sort((a, b) => {
+            if (articleStats[b].total !== articleStats[a].total) {
+                return articleStats[b].total - articleStats[a].total;
+            }
+            return a.localeCompare(b);
+        });
+
+        // Summary bar
+        const summaryBar = $('summaryBar');
+        summaryBar.innerHTML = `
+            <div class="stat-chip">
+                <span class="stat-num">${allUniqueOrders.size}</span>
+                <span class="stat-label">Ordini nel file</span>
+            </div>
+            <div class="stat-chip">
+                <span class="stat-num">${dictOrdiniReali.size}</span>
+                <span class="stat-label">Ordini con righe attive</span>
+            </div>
+            <div class="stat-chip">
+                <span class="stat-num">${sortedArticles.length}</span>
+                <span class="stat-label">Articoli analizzati</span>
+            </div>
+        `;
+
+        // Render table
+        const tbody = $('reportTableBody');
+        tbody.innerHTML = '';
+
+        const fragment = document.createDocumentFragment();
+        sortedArticles.forEach(art => {
+            const s = articleStats[art];
+            const tr = document.createElement('tr');
+
+            const cellClass = (val, art, prio) => {
+                if (val > 0) return `<td class="clickable" onclick="triggerDrillDown('priority','${art.replace(/'/g, "\\'")}',${prio})">${val}</td>`;
+                return `<td class="zero-val">0</td>`;
+            };
+
+            tr.innerHTML =
+                `<td>${art}</td>` +
+                cellClass(s.p1, art, 1) +
+                cellClass(s.p2, art, 2) +
+                cellClass(s.p3, art, 3) +
+                cellClass(s.p4, art, 4) +
+                `<td class="col-total ${s.total > 0 ? 'clickable' : 'zero-val'}" ${s.total > 0 ? `onclick="triggerDrillDown('priority','${art.replace(/'/g, "\\'")}',0)"` : ''}>${s.total}</td>`;
+
+            fragment.appendChild(tr);
+        });
+        tbody.appendChild(fragment);
+
+        showLoader(false);
+        $('resultsArea').classList.add('visible');
+    }
+
+    // ═══════════════════════════════════════════
+    //  DRILL-DOWN
+    // ═══════════════════════════════════════════
+    function triggerDrillDown(type, articoloTarget, targetMissingCount) {
+        const targetOrders = new Set();
+        currentModalContext = { type, article: articoloTarget, priority: targetMissingCount };
+
+        if (type === 'baseline') {
+            $('modalTitle').textContent = "Dettaglio Ordini: Baseline (Pronti)";
+            for (let i = 1; i < originalRows.length; i++) {
+                const ord = String(originalRows[i][colOrderIdx] || "").trim();
+                if (ord && !dictOrdiniReali.has(ord)) targetOrders.add(ord);
+            }
+        } else if (type === 'priority') {
+            const priorityLabel = targetMissingCount === 0 ? "Totale" : (targetMissingCount === 4 ? ">3" : targetMissingCount);
+            $('modalTitle').textContent = `Dettaglio: ${articoloTarget} — Priorità ${priorityLabel}`;
+
+            dictOrdini.forEach((orderMap, ordine) => {
+                if (orderMap.has(articoloTarget)) {
+                    const missingCount = orderMap.size;
+                    let isMatch = false;
+
+                    if (targetMissingCount === 0) isMatch = true;
+                    else if (targetMissingCount === 1 && missingCount === 1) isMatch = true;
+                    else if (targetMissingCount === 2 && missingCount === 2) isMatch = true;
+                    else if (targetMissingCount === 3 && missingCount === 3) isMatch = true;
+                    else if (targetMissingCount === 4 && missingCount > 3) isMatch = true;
+
+                    if (isMatch) targetOrders.add(ordine);
+                }
+            });
+        }
+
+        if (targetOrders.size === 0) return;
+
+        const resultRows = [];
+        for (let i = 1; i < originalRows.length; i++) {
+            const ord = String(originalRows[i][colOrderIdx] || "").trim();
+            if (targetOrders.has(ord)) resultRows.push(originalRows[i]);
+        }
+
+        currentExportData = [headers, ...resultRows];
+        renderModalData(headers, resultRows);
+        $('drillDownModal').classList.add('open');
+    }
+
+    function renderModalData(hdrs, rows) {
+        $('modalInfo').textContent = `${rows.length} righe originali — ${new Set(rows.map(r => String(r[colOrderIdx] || "").trim())).size} ordini distinti`;
+
+        const thead = $('modalThead');
+        const tbody = $('modalTbody');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        // Header row
+        const trHead = document.createElement('tr');
+        hdrs.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h || '';
+            trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+
+        // Rows — limit to 2000 for DOM performance
+        const DISPLAY_LIMIT = 2000;
+        const rowsToDisplay = rows.slice(0, DISPLAY_LIMIT);
+        const fragment = document.createDocumentFragment();
+
+        rowsToDisplay.forEach(row => {
+            const tr = document.createElement('tr');
+            for (let c = 0; c < hdrs.length; c++) {
+                const td = document.createElement('td');
+                td.textContent = row[c] !== undefined ? row[c] : '';
+                tr.appendChild(td);
+            }
+            fragment.appendChild(tr);
+        });
+        tbody.appendChild(fragment);
+
+        // Truncation notice
+        const existingNotice = $('drillDownModal').querySelector('.truncation-notice');
+        if (existingNotice) existingNotice.remove();
+
+        if (rows.length > DISPLAY_LIMIT) {
+            const notice = document.createElement('div');
+            notice.className = 'truncation-notice';
+            notice.textContent = `Visualizzate ${DISPLAY_LIMIT} righe su ${rows.length}. Usa "Scarica Excel" per il set completo.`;
+            $('drillDownModal').querySelector('.modal-body').appendChild(notice);
+        }
+    }
+
+    // ═══════════════════════════════════════════
+    //  EXCEL EXPORT
+    // ═══════════════════════════════════════════
+    function downloadExcel() {
+        if (!currentExportData || currentExportData.length === 0) return;
+
+        const ws = XLSX.utils.aoa_to_sheet(currentExportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Dettaglio Drill-down");
+
+        const now = new Date();
+        const timeStr = String(now.getHours()).padStart(2, '0') +
+                        String(now.getMinutes()).padStart(2, '0') +
+                        String(now.getSeconds()).padStart(2, '0');
+
+        let filename = "Export.xlsx";
+        if (currentModalContext.type === 'baseline') {
+            filename = `Pronti_${timeStr}.xlsx`;
+        } else {
+            const safeName = currentModalContext.article.replace(/[%/\\]/g, "").substring(0, 10);
+            filename = `${safeName}_P${currentModalContext.priority}_${timeStr}.xlsx`;
+        }
+
+        XLSX.writeFile(wb, filename);
+    }
+
+    function closeModal() {
+        $('drillDownModal').classList.remove('open');
+    }
+</script>
+</body>
+</html>
