@@ -613,16 +613,13 @@
 <body>
 
 <div class="container">
-    <!-- HEADER -->
     <header>
         <h1>Analisi Report RND</h1>
         <span class="badge">Client-Side</span>
         <p>Elaborazione sicura e locale. Nessun dato trasmesso a server esterni.</p>
     </header>
 
-    <!-- CONTROLS -->
     <div class="controls-panel">
-        <!-- 1. Logica -->
         <div class="control-section">
             <div class="control-label">1 &middot; Logica Famiglie</div>
             <div class="control-body">
@@ -640,7 +637,6 @@
             </div>
         </div>
 
-        <!-- 2. Unità -->
         <div class="control-section">
             <div class="control-label">2 &middot; Unità di misura</div>
             <div class="control-body">
@@ -658,7 +654,6 @@
             </div>
         </div>
 
-        <!-- 3. Upload -->
         <div class="control-section">
             <div class="control-label">3 &middot; Carica file</div>
             <div class="control-body">
@@ -675,7 +670,6 @@
         </div>
     </div>
 
-    <!-- RECALCULATE BAR -->
     <div class="recalc-bar" id="recalcBar">
         <div class="recalc-text">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -687,7 +681,6 @@
         </button>
     </div>
 
-    <!-- DEBUG PANEL -->
     <div class="debug-panel" id="debugPanel">
         <div class="debug-header">
             <span>Debug Log</span>
@@ -696,18 +689,16 @@
         <div class="debug-log" id="debugLog"></div>
     </div>
 
-    <!-- LOADER -->
     <div class="loader-wrap" id="loader">
         <div class="spinner"></div>
         <span class="loader-text">Elaborazione in corso…</span>
     </div>
 
-    <!-- RESULTS -->
     <div id="resultsArea">
         <div class="baseline-card">
             <div class="baseline-label">
-                <h2>Ordini Baseline (Pronti)</h2>
-                <p>Ordini privi di blocchi — nessuna riga nei plant esclusi</p>
+                <h2>Ordini interamente producibili a BRA</h2>
+                <p>Ordini completi senza articoli esclusivi di COR</p>
             </div>
             <div class="baseline-value">
                 <span class="baseline-number" id="baselineCount" onclick="triggerDrillDown('baseline', null, null)" title="Clicca per espandere">0</span>
@@ -741,7 +732,6 @@
     </div>
 </div>
 
-<!-- SHEET SELECTOR MODAL -->
 <div class="sheet-modal-overlay" id="sheetModal">
     <div class="sheet-modal-box">
         <h3>Seleziona il foglio dati</h3>
@@ -750,7 +740,6 @@
     </div>
 </div>
 
-<!-- DRILL-DOWN MODAL -->
 <div class="modal-overlay" id="drillDownModal">
     <div class="modal-box">
         <div class="modal-head">
@@ -1026,10 +1015,7 @@
 
         let rowsProcessed = 0;
         let rowsSkippedNoOrder = 0;
-        let rowsSkippedBraCor = 0;
         let rowsSkippedEmptyPlant = 0;
-        let rowsIncluded = 0;
-        let articlesMatchedFilter = 0;
 
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
@@ -1040,32 +1026,26 @@
             rowsProcessed++;
 
             if (!ordine) { rowsSkippedNoOrder++; continue; }
-
-            const isBraCor = /BRA|COR/i.test(plant);
-
-            if (isBraCor) { rowsSkippedBraCor++; continue; }
             if (plant === "") { rowsSkippedEmptyPlant++; continue; }
-
-            dictOrdiniReali.add(ordine);
-            rowsIncluded++;
 
             if (!dictOrdini.has(ordine)) {
                 dictOrdini.set(ordine, new Map());
             }
-            const orderMap = dictOrdini.get(ordine);
 
-            if (isReal || articolo.includes(prefixInput)) {
-                orderMap.set(articolo, (orderMap.get(articolo) || 0) + 1);
-                articlesMatchedFilter++;
+            const orderItems = dictOrdini.get(ordine);
+            const isBra = /BRA/i.test(plant); // Contiene BRA?
+
+            if (!orderItems.has(articolo)) {
+                orderItems.set(articolo, { isBra: isBra, count: 0 });
+            } else {
+                // Se l'articolo appare più volte, se almeno una è producibile a BRA, lo consideriamo ok.
+                if (isBra) orderItems.get(articolo).isBra = true;
             }
+            orderItems.get(articolo).count++;
         }
 
-        dbg(`Righe processate: ${rowsProcessed} | Incluse: ${rowsIncluded} | No ordine: ${rowsSkippedNoOrder} | BRA/COR: ${rowsSkippedBraCor} | Plant vuoto: ${rowsSkippedEmptyPlant}`, 'info');
-        dbg(`Ordini reali (non bloccati): ${dictOrdiniReali.size} | Ordini in dictOrdini: ${dictOrdini.size} | Match filtro articolo: ${articlesMatchedFilter}`, 'info');
-
-        if (dictOrdini.size === 0 && !isReal && prefixInput) {
-            dbg(`⚠ dictOrdini è vuoto! Nessun articolo contiene "${prefixInput}". Prova ad attivare "Caso Reale" oppure cambia il prefisso.`, 'warn');
-        }
+        dbg(`Righe processate: ${rowsProcessed} | No ordine: ${rowsSkippedNoOrder} | Plant vuoto: ${rowsSkippedEmptyPlant}`, 'info');
+        dbg(`Ordini distinti nel file: ${dictOrdini.size}`, 'info');
 
         dataIsLoaded = true;
         generateReport(data);
@@ -1076,37 +1056,49 @@
     // ═══════════════════════════════════════════
     function generateReport(data) {
         const countMethod = document.querySelector('input[name="countMethod"]:checked').value;
-
-        const allUniqueOrders = new Set();
-        for (let i = 1; i < data.length; i++) {
-            const ord = String(data[i][colOrderIdx] || "").trim();
-            if (ord) allUniqueOrders.add(ord);
-        }
+        const isReal = $('isRealToggle').checked;
+        const prefixRaw = $('prefixInput').value.trim();
+        const prefixInput = prefixRaw.replace(/%/g, '').replace(/\*/g, '');
 
         let baselineCount = 0;
-        allUniqueOrders.forEach(ord => {
-            if (!dictOrdiniReali.has(ord)) baselineCount++;
-        });
-        $('baselineCount').textContent = baselineCount;
-
         const articleStats = {};
 
-        dictOrdini.forEach((orderMap, ordine) => {
-            const missingCount = orderMap.size;
-
-            orderMap.forEach((rowCount, articolo) => {
-                if (!articleStats[articolo]) {
-                    articleStats[articolo] = { p1: 0, p2: 0, p3: 0, p4: 0, total: 0 };
+        dictOrdini.forEach((orderItems, ordine) => {
+            // Troviamo gli articoli che bloccano l'ordine (prodotti SOLO a COR)
+            let missingArticles = [];
+            orderItems.forEach((info, articolo) => {
+                if (!info.isBra) {
+                    missingArticles.push(articolo);
                 }
-                const weight = (countMethod === 'righe') ? rowCount : 1;
-
-                articleStats[articolo].total += weight;
-                if (missingCount === 1) articleStats[articolo].p1 += weight;
-                else if (missingCount === 2) articleStats[articolo].p2 += weight;
-                else if (missingCount === 3) articleStats[articolo].p3 += weight;
-                else if (missingCount > 3) articleStats[articolo].p4 += weight;
             });
+
+            const missingCount = missingArticles.length;
+
+            if (missingCount === 0) {
+                // L'ordine è interamente producibile a BRA!
+                baselineCount++;
+                dictOrdiniReali.add(ordine);
+            } else {
+                // Mancano missingCount articoli per sbloccare questo ordine
+                missingArticles.forEach(articolo => {
+                    // Applichiamo il filtro prefisso: calcoliamo i punteggi solo per la famiglia interessata
+                    if (!isReal && !articolo.includes(prefixInput)) return;
+
+                    if (!articleStats[articolo]) {
+                        articleStats[articolo] = { p1: 0, p2: 0, p3: 0, p4: 0, total: 0 };
+                    }
+                    const weight = (countMethod === 'righe') ? orderItems.get(articolo).count : 1;
+
+                    articleStats[articolo].total += weight;
+                    if (missingCount === 1) articleStats[articolo].p1 += weight;
+                    else if (missingCount === 2) articleStats[articolo].p2 += weight;
+                    else if (missingCount === 3) articleStats[articolo].p3 += weight;
+                    else if (missingCount > 3) articleStats[articolo].p4 += weight;
+                });
+            }
         });
+
+        $('baselineCount').textContent = baselineCount;
 
         const sortedArticles = Object.keys(articleStats).sort((a, b) => {
             if (articleStats[b].total !== articleStats[a].total) {
@@ -1115,25 +1107,24 @@
             return a.localeCompare(b);
         });
 
-        dbg(`Report generato: ${sortedArticles.length} articoli in tabella | Baseline: ${baselineCount} | Metodo: ${countMethod}`, 'ok');
+        dbg(`Report generato: ${sortedArticles.length} articoli target in tabella | Ordini completi a BRA: ${baselineCount}`, 'ok');
 
-        // Summary bar
+        // Update Summary Bar Text
         $('summaryBar').innerHTML = `
             <div class="stat-chip">
-                <span class="stat-num">${allUniqueOrders.size}</span>
-                <span class="stat-label">Ordini nel file</span>
+                <span class="stat-num">${dictOrdini.size}</span>
+                <span class="stat-label">Ordini Totali</span>
             </div>
             <div class="stat-chip">
-                <span class="stat-num">${dictOrdiniReali.size}</span>
-                <span class="stat-label">Ordini con righe attive</span>
+                <span class="stat-num">${baselineCount}</span>
+                <span class="stat-label">Ordini interamente producibili a BRA</span>
             </div>
             <div class="stat-chip">
                 <span class="stat-num">${sortedArticles.length}</span>
-                <span class="stat-label">Articoli analizzati</span>
+                <span class="stat-label">Articoli da insegnare a BRA</span>
             </div>
         `;
 
-        // Render table
         const tbody = $('reportTableBody');
         tbody.innerHTML = '';
 
@@ -1178,25 +1169,27 @@
         currentModalContext = { type, article: articoloTarget, priority: targetMissingCount };
 
         if (type === 'baseline') {
-            $('modalTitle').textContent = "Dettaglio Ordini: Baseline (Pronti)";
-            for (let i = 1; i < originalRows.length; i++) {
-                const ord = String(originalRows[i][colOrderIdx] || "").trim();
-                if (ord && !dictOrdiniReali.has(ord)) targetOrders.add(ord);
-            }
+            $('modalTitle').textContent = "Dettaglio Ordini: Interamente producibili a BRA";
+            dictOrdiniReali.forEach(ord => targetOrders.add(ord));
         } else if (type === 'priority') {
             const priorityLabel = targetMissingCount === 0 ? "Totale" : (targetMissingCount === 4 ? ">3" : targetMissingCount);
             $('modalTitle').textContent = `Dettaglio: ${articoloTarget} — Priorità ${priorityLabel}`;
 
-            dictOrdini.forEach((orderMap, ordine) => {
-                if (orderMap.has(articoloTarget)) {
-                    const missingCount = orderMap.size;
-                    let isMatch = false;
+            dictOrdini.forEach((orderItems, ordine) => {
+                // Se l'ordine contiene l'articolo target, e per questo ordine NON è producibile a BRA
+                if (orderItems.has(articoloTarget) && !orderItems.get(articoloTarget).isBra) {
+                    
+                    let missingArticlesCount = 0;
+                    orderItems.forEach((info) => {
+                        if (!info.isBra) missingArticlesCount++;
+                    });
 
+                    let isMatch = false;
                     if (targetMissingCount === 0) isMatch = true;
-                    else if (targetMissingCount === 1 && missingCount === 1) isMatch = true;
-                    else if (targetMissingCount === 2 && missingCount === 2) isMatch = true;
-                    else if (targetMissingCount === 3 && missingCount === 3) isMatch = true;
-                    else if (targetMissingCount === 4 && missingCount > 3) isMatch = true;
+                    else if (targetMissingCount === 1 && missingArticlesCount === 1) isMatch = true;
+                    else if (targetMissingCount === 2 && missingArticlesCount === 2) isMatch = true;
+                    else if (targetMissingCount === 3 && missingArticlesCount === 3) isMatch = true;
+                    else if (targetMissingCount === 4 && missingArticlesCount > 3) isMatch = true;
 
                     if (isMatch) targetOrders.add(ordine);
                 }
