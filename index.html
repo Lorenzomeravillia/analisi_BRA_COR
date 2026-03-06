@@ -629,8 +629,8 @@
                         <span class="toggle-slider"></span>
                     </div>
                     <div class="toggle-text">
-                        <strong>Caso Reale</strong>
-                        <small>Valuta tutte le famiglie di mobili presenti. Se disattivato, filtra per prefisso:</small>
+                        <strong>Escludi Ordini Misti</strong>
+                        <small>Se attivo, scarta interamente gli ordini che contengono articoli non appartenenti alla famiglia indicata (es. articoli non trasferibili).</small>
                     </div>
                 </label>
                 <input type="text" id="prefixInput" value="%TL1X" class="prefix-input" placeholder="Prefisso Famiglia">
@@ -698,7 +698,7 @@
         <div class="baseline-card">
             <div class="baseline-label">
                 <h2>Ordini interamente producibili a BRA</h2>
-                <p>Ordini completi senza articoli esclusivi di COR</p>
+                <p>Ordini completi o ripuliti, senza articoli che bloccano il trasferimento</p>
             </div>
             <div class="baseline-value">
                 <span class="baseline-number" id="baselineCount" onclick="triggerDrillDown('baseline', null, null)" title="Clicca per espandere">0</span>
@@ -710,8 +710,8 @@
 
         <div class="table-card">
             <div class="table-header">
-                <h2>Matrice Priorità per Articolo</h2>
-                <p>Ordinamento decrescente per totale, poi alfabetico.</p>
+                <h2>Matrice Priorità per Articolo Target</h2>
+                <p>Ordinamento decrescente per totale, poi alfabetico. Sono esclusi gli articoli fuori famiglia.</p>
             </div>
             <div class="table-wrap">
                 <table>
@@ -775,17 +775,16 @@
     let dictOrdiniReali = new Set();
     let dictOrdini = new Map();
     let originalRows = [];
-    let currentWorkbook = null; // keep workbook in memory for sheet re-selection
+    let currentWorkbook = null; 
 
     let currentExportData = [];
     let currentModalContext = { type: '', article: '', priority: '' };
 
-    // Column indices (0-based) – matching VBA col A=0, C=2, K=10
     let colOrderIdx = 0;
     let colPlantIdx = 2;
     let colArticleIdx = 10;
 
-    let dataIsLoaded = false; // tracks if we have data ready for recalc
+    let dataIsLoaded = false; 
 
     // ═══════════════════════════════════════════
     //  DEBUG LOGGER
@@ -813,7 +812,6 @@
         $('loader').classList.toggle('active', show);
     }
 
-    // Show recalc bar when params change (only if data is loaded)
     function onParamChange() {
         if (dataIsLoaded) {
             $('recalcBar').classList.add('visible');
@@ -826,7 +824,6 @@
         r.addEventListener('change', onParamChange);
     });
 
-    // Recalculate button
     function recalculate() {
         if (!originalRows || originalRows.length === 0) return;
         $('recalcBar').classList.remove('visible');
@@ -837,7 +834,6 @@
         }, 50);
     }
 
-    // Drag-and-drop
     const uploadZone = $('uploadZone');
     ['dragenter', 'dragover'].forEach(evt => {
         uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
@@ -895,11 +891,9 @@
                     }
 
                     if (sheetNames.length === 1) {
-                        // Un solo foglio: usalo direttamente
                         dbg(`Foglio unico "${sheetNames[0]}" — uso automatico`, 'ok');
                         loadSheet(sheetNames[0]);
                     } else {
-                        // Più fogli: mostra selettore
                         showLoader(false);
                         showSheetSelector(sheetNames);
                     }
@@ -945,11 +939,6 @@
             headers = originalRows[0];
             dbg(`Colonne trovate: ${headers.length}`, 'info');
 
-            // Log prime colonne per debug
-            const previewCols = headers.slice(0, Math.min(15, headers.length)).map((h, i) => `[${i}]="${h}"`).join('  ');
-            dbg(`Header (prime 15): ${previewCols}`, 'info');
-
-            // Auto-detect colonne per nome (fallback su indici fissi)
             const colOrder = findColumnIndex(headers, ['customer order', 'ordine cliente', 'ordine', 'order']);
             const colPlant = findColumnIndex(headers, ['plant', 'impianto', 'stabilimento']);
             const colArticle = findColumnIndex(headers, ['articolo', 'article', 'material', 'materiale']);
@@ -976,12 +965,6 @@
                 dbg(`Colonna Articolo non trovata per nome → fallback indice 10 ("${headers[10] || 'N/A'}")`, 'warn');
             }
 
-            // Preview prima riga dati
-            if (originalRows.length > 1) {
-                const row1 = originalRows[1];
-                dbg(`Riga 1 dati → Ordine="${row1[colOrderIdx]}" | Plant="${row1[colPlantIdx]}" | Articolo="${row1[colArticleIdx]}"`, 'info');
-            }
-
             processData(originalRows);
 
         } catch (err) {
@@ -1004,14 +987,13 @@
     //  CORE BUSINESS LOGIC
     // ═══════════════════════════════════════════
     function processData(data) {
-        dictOrdiniReali.clear();
         dictOrdini.clear();
 
         const isReal = $('isRealToggle').checked;
         const prefixRaw = $('prefixInput').value.trim();
         const prefixInput = prefixRaw.replace(/%/g, '').replace(/\*/g, '');
 
-        dbg(`Parametri → Caso Reale: ${isReal} | Prefisso: "${prefixRaw}" → filtro contains: "${prefixInput}" | Metodo: ${document.querySelector('input[name="countMethod"]:checked').value}`, 'info');
+        dbg(`Parametri → Escludi Misti (Caso Reale): ${isReal} | Prefisso: "${prefixInput}" | Metodo: ${document.querySelector('input[name="countMethod"]:checked').value}`, 'info');
 
         let rowsProcessed = 0;
         let rowsSkippedNoOrder = 0;
@@ -1033,12 +1015,11 @@
             }
 
             const orderItems = dictOrdini.get(ordine);
-            const isBra = /BRA/i.test(plant); // Contiene BRA?
+            const isBra = /BRA/i.test(plant); 
 
             if (!orderItems.has(articolo)) {
                 orderItems.set(articolo, { isBra: isBra, count: 0 });
             } else {
-                // Se l'articolo appare più volte, se almeno una è producibile a BRA, lo consideriamo ok.
                 if (isBra) orderItems.get(articolo).isBra = true;
             }
             orderItems.get(articolo).count++;
@@ -1048,13 +1029,15 @@
         dbg(`Ordini distinti nel file: ${dictOrdini.size}`, 'info');
 
         dataIsLoaded = true;
-        generateReport(data);
+        generateReport();
     }
 
     // ═══════════════════════════════════════════
     //  REPORT GENERATION
     // ═══════════════════════════════════════════
-    function generateReport(data) {
+    function generateReport() {
+        dictOrdiniReali.clear(); 
+        
         const countMethod = document.querySelector('input[name="countMethod"]:checked').value;
         const isReal = $('isRealToggle').checked;
         const prefixRaw = $('prefixInput').value.trim();
@@ -1064,26 +1047,39 @@
         const articleStats = {};
 
         dictOrdini.forEach((orderItems, ordine) => {
-            // Troviamo gli articoli che bloccano l'ordine (prodotti SOLO a COR)
+            let isDisqualified = false;
             let missingArticles = [];
+            let hasTargetItem = false;
+
             orderItems.forEach((info, articolo) => {
-                if (!info.isBra) {
-                    missingArticles.push(articolo);
+                const matchesPrefix = articolo.includes(prefixInput);
+
+                if (!matchesPrefix) {
+                    // Se c'è un articolo fuori famiglia e siamo in "Caso Reale", l'intero ordine è squalificato
+                    if (isReal) {
+                        isDisqualified = true;
+                    }
+                } else {
+                    // È un articolo della famiglia target
+                    hasTargetItem = true;
+                    if (!info.isBra) {
+                        missingArticles.push(articolo); // Ci manca la produzione a BRA
+                    }
                 }
             });
+
+            // Scartiamo l'ordine se: è squalificato dai filtri misti, OPPURE non ha nemmeno un articolo della famiglia target
+            if (isDisqualified || !hasTargetItem) return;
 
             const missingCount = missingArticles.length;
 
             if (missingCount === 0) {
-                // L'ordine è interamente producibile a BRA!
+                // L'ordine (o la porzione utile) è interamente producibile a BRA
                 baselineCount++;
                 dictOrdiniReali.add(ordine);
             } else {
-                // Mancano missingCount articoli per sbloccare questo ordine
+                // Popoliamo la matrice solo con gli articoli target mancanti
                 missingArticles.forEach(articolo => {
-                    // Applichiamo il filtro prefisso: calcoliamo i punteggi solo per la famiglia interessata
-                    if (!isReal && !articolo.includes(prefixInput)) return;
-
                     if (!articleStats[articolo]) {
                         articleStats[articolo] = { p1: 0, p2: 0, p3: 0, p4: 0, total: 0 };
                     }
@@ -1107,9 +1103,8 @@
             return a.localeCompare(b);
         });
 
-        dbg(`Report generato: ${sortedArticles.length} articoli target in tabella | Ordini completi a BRA: ${baselineCount}`, 'ok');
+        dbg(`Report generato: ${sortedArticles.length} articoli target in tabella | Ordini ok per BRA: ${baselineCount}`, 'ok');
 
-        // Update Summary Bar Text
         $('summaryBar').innerHTML = `
             <div class="stat-chip">
                 <span class="stat-num">${dictOrdini.size}</span>
@@ -1130,7 +1125,7 @@
 
         if (sortedArticles.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
-                Nessun articolo trovato con i parametri attuali. Prova ad attivare "Caso Reale" o a modificare il prefisso.
+                Nessun articolo target trovato con i parametri attuali.
             </td></tr>`;
         } else {
             const fragment = document.createDocumentFragment();
@@ -1168,6 +1163,10 @@
         const targetOrders = new Set();
         currentModalContext = { type, article: articoloTarget, priority: targetMissingCount };
 
+        const isReal = $('isRealToggle').checked;
+        const prefixRaw = $('prefixInput').value.trim();
+        const prefixInput = prefixRaw.replace(/%/g, '').replace(/\*/g, '');
+
         if (type === 'baseline') {
             $('modalTitle').textContent = "Dettaglio Ordini: Interamente producibili a BRA";
             dictOrdiniReali.forEach(ord => targetOrders.add(ord));
@@ -1176,14 +1175,23 @@
             $('modalTitle').textContent = `Dettaglio: ${articoloTarget} — Priorità ${priorityLabel}`;
 
             dictOrdini.forEach((orderItems, ordine) => {
-                // Se l'ordine contiene l'articolo target, e per questo ordine NON è producibile a BRA
-                if (orderItems.has(articoloTarget) && !orderItems.get(articoloTarget).isBra) {
-                    
-                    let missingArticlesCount = 0;
-                    orderItems.forEach((info) => {
-                        if (!info.isBra) missingArticlesCount++;
-                    });
+                let isDisqualified = false;
+                let missingArticlesCount = 0;
+                let hasTargetItem = false;
 
+                orderItems.forEach((info, articolo) => {
+                    const matchesPrefix = articolo.includes(prefixInput);
+                    if (!matchesPrefix) {
+                        if (isReal) isDisqualified = true;
+                    } else {
+                        hasTargetItem = true;
+                        if (!info.isBra) missingArticlesCount++;
+                    }
+                });
+
+                if (isDisqualified || !hasTargetItem) return;
+
+                if (orderItems.has(articoloTarget) && !orderItems.get(articoloTarget).isBra) {
                     let isMatch = false;
                     if (targetMissingCount === 0) isMatch = true;
                     else if (targetMissingCount === 1 && missingArticlesCount === 1) isMatch = true;
@@ -1240,7 +1248,6 @@
         });
         tbody.appendChild(fragment);
 
-        // Truncation notice
         const existingNotice = $('drillDownModal').querySelector('.truncation-notice');
         if (existingNotice) existingNotice.remove();
 
