@@ -28,6 +28,8 @@
             --amber: #d97706;
             --amber-bg: #fffbeb;
             --amber-border: #fde68a;
+            --purple: #9333ea;
+            --purple-bg: #faf5ff;
             --red: #dc2626;
             --red-bg: #fef2f2;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
@@ -415,6 +417,7 @@
         }
         thead th:nth-child(2), thead th:nth-child(3) { text-align: left; }
         thead th.col-total { background: #eef0f4; }
+        thead th.col-score { background: var(--purple-bg); color: var(--purple); }
         
         tbody td {
             padding: 10px 20px;
@@ -441,7 +444,14 @@
             font-weight: 700;
             color: var(--text);
         }
+        tbody td.col-score {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--purple);
+            font-weight: 600;
+            background: var(--purple-bg);
+        }
         tbody tr:hover { background: #fafbfc; }
+        
         .clickable {
             color: var(--accent);
             font-weight: 700;
@@ -462,6 +472,15 @@
         }
         .clickable-green:hover { color: var(--green-hover); background: #dcfce7; border-radius: 4px; }
         
+        .clickable-purple {
+            color: var(--purple);
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .clickable-purple:hover { color: #7e22ce; background: #f3e8ff; border-radius: 4px; }
+
         .zero-val { color: var(--text-muted); font-weight: 400; }
         .success-val { color: var(--green); font-weight: 700; background: var(--green-bg); border-radius: 4px; padding: 2px 6px;}
 
@@ -675,6 +694,7 @@
                             <th title="Numero di ordini che scendono a 2 blocchi residui">Avanza a 2 blocchi</th>
                             <th>Rimangono >3</th>
                             <th class="col-total">Tot. Impatto</th>
+                            <th class="col-score" title="Punteggio ponderato che determina la posizione in classifica dell'algoritmo">Score Algoritmo</th>
                         </tr>
                     </thead>
                     <tbody id="reportTableBody"></tbody>
@@ -936,6 +956,12 @@
         activeOrders.forEach(missing => missing.forEach(m => actuallyMissing.add(m.desc)));
         itemsToProcess.forEach(item => { if (!actuallyMissing.has(item)) itemsToProcess.delete(item); });
 
+        // Definiamo i Pesi Moltiplicatori
+        const W1 = 1000000;
+        const W2 = 10000;
+        const W3 = 100;
+        const W4 = 1;
+
         // Loop principale della simulazione
         while(itemsToProcess.size > 0 && activeOrders.size > 0) {
             let bestItem = null;
@@ -944,7 +970,6 @@
 
             // Valuta ogni articolo rimasto
             itemsToProcess.forEach(candidate => {
-                // Prepara contenitori vuoti per salvare gli ordini specifici
                 let stats = { 
                     p1: 0, p2: 0, p3: 0, p4: 0, code: allTargetItems.get(candidate).code, totalImpact: 0,
                     ordersP1: [], ordersP2: [], ordersP3: [], ordersP4: [], ordersTotal: []
@@ -959,23 +984,21 @@
                         stats.totalImpact += w;
                         stats.ordersTotal.push(ordine);
 
-                        // Pesi dello score (1 milione pti per sblocco, 10 mila per avanzamento, ecc.)
-                        // SALVIAMO l'id ordine nella rispettiva lista
                         if (missingCount === 1) {
                             stats.p1 += w;
-                            score += w * 1000000;
+                            score += w * W1;
                             stats.ordersP1.push(ordine);
                         } else if (missingCount === 2) {
                             stats.p2 += w;
-                            score += w * 10000;
+                            score += w * W2;
                             stats.ordersP2.push(ordine);
                         } else if (missingCount === 3) {
                             stats.p3 += w;
-                            score += w * 100;
+                            score += w * W3;
                             stats.ordersP3.push(ordine);
                         } else {
                             stats.p4 += w;
-                            score += w * 1;
+                            score += w * W4;
                             stats.ordersP4.push(ordine);
                         }
                     }
@@ -991,8 +1014,11 @@
             // Se nessuno sblocca nulla di utile, termina
             if (!bestItem || bestScore === 0) break;
 
-            // Salva la mossa vincente e TUTTI i suoi dati associati nella roadmap globale
-            currentRoadmap.push({ desc: bestItem, stats: bestStats });
+            // Crea la stringa della formula per la UI
+            let breakdownStr = `(${bestStats.p1} x ${W1.toLocaleString()}) + (${bestStats.p2} x ${W2.toLocaleString()}) + (${bestStats.p3} x ${W3}) + (${bestStats.p4} x ${W4})`;
+
+            // Salva la mossa vincente e i suoi dati
+            currentRoadmap.push({ desc: bestItem, stats: bestStats, score: bestScore, breakdown: breakdownStr });
 
             // SIMULAZIONE: Insegniamo 'bestItem' a BRA
             let newlyReadyOrders = [];
@@ -1028,7 +1054,7 @@
         tbody.innerHTML = '';
 
         if (currentRoadmap.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
                 Tutti gli ordini validi sono già interamente producibili a BRA. Non serve alcuna Roadmap.
             </td></tr>`;
         } else {
@@ -1044,12 +1070,13 @@
                 const cellP3 = s.p3 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 3)">${s.p3}</td>` : `<td class="zero-val">0</td>`;
                 const cellP4 = s.p4 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 4)">${s.p4}</td>` : `<td class="zero-val">0</td>`;
                 const cellTot = s.totalImpact > 0 ? `<td class="col-total clickable" onclick="triggerDrillDown('sim_priority', ${index}, 0)">${s.totalImpact}</td>` : `<td class="col-total zero-val">0</td>`;
+                const cellScore = `<td class="col-score"><span class="clickable-purple" onclick="triggerDrillDown('score', ${index}, null)">${itemData.score.toLocaleString()}</span></td>`;
 
                 tr.innerHTML =
                     `<td>${index + 1}</td>` +
                     `<td>${s.code}</td>` +
                     `<td><span class="clickable" onclick="triggerDrillDown('item', '${artDesc.replace(/'/g, "\\'")}')" title="Mostra gli ordini originariamente bloccati da questo articolo">${artDesc}</span></td>` +
-                    cellP1 + cellP2 + cellP3 + cellP4 + cellTot;
+                    cellP1 + cellP2 + cellP3 + cellP4 + cellTot + cellScore;
 
                 fragment.appendChild(tr);
             });
@@ -1067,6 +1094,7 @@
     function triggerDrillDown(type, arg1, arg2) {
         const targetOrders = new Set();
         currentModalContext = { type, arg1, arg2 };
+        let customModalInfo = null;
 
         if (type === 'baseline') {
             $('modalTitle').textContent = "Dettaglio: Ordini Base (Pronti all'inizio)";
@@ -1082,7 +1110,6 @@
             });
             
         } else if (type === 'sim_priority') {
-            // Estrazione esatta degli ordini dallo Step specifico della simulazione
             const stepIndex = arg1;
             const priorityLevel = arg2;
             const stepData = currentRoadmap[stepIndex];
@@ -1098,6 +1125,16 @@
 
             $('modalTitle').textContent = `Step ${stepIndex + 1} - ${stepData.desc} (${prioLabel})`;
             orderList.forEach(ord => targetOrders.add(ord));
+
+        } else if (type === 'score') {
+            const stepIndex = arg1;
+            const stepData = currentRoadmap[stepIndex];
+            
+            $('modalTitle').textContent = `Dettaglio Score Algoritmo: Step ${stepIndex + 1}`;
+            customModalInfo = `Formula Ponderata: ${stepData.breakdown} = ${stepData.score.toLocaleString()} Punti Totali.`;
+            
+            // Popoliamo la griglia con tutti gli ordini valutati in questo calcolo
+            stepData.stats.ordersTotal.forEach(ord => targetOrders.add(ord));
         }
 
         if (targetOrders.size === 0) return;
@@ -1109,12 +1146,16 @@
         }
 
         currentExportData = [headers, ...resultRows];
-        renderModalData(headers, resultRows);
+        renderModalData(headers, resultRows, customModalInfo);
         $('drillDownModal').classList.add('open');
     }
 
-    function renderModalData(hdrs, rows) {
-        $('modalInfo').textContent = `${rows.length} righe originali — ${new Set(rows.map(r => String(r[colOrderIdx] || "").trim())).size} ordini distinti`;
+    function renderModalData(hdrs, rows, customInfoPrefix) {
+        let infoStr = `${rows.length} righe originali — ${new Set(rows.map(r => String(r[colOrderIdx] || "").trim())).size} ordini distinti`;
+        if (customInfoPrefix) {
+            infoStr = `<strong style="color:var(--purple);">${customInfoPrefix}</strong><br>` + infoStr;
+        }
+        $('modalInfo').innerHTML = infoStr;
 
         const thead = $('modalThead');
         const tbody = $('modalTbody');
@@ -1169,6 +1210,8 @@
             filename = `${currentModalContext.arg1.replace(/[%/\\]/g, "").substring(0, 10)}_Bloccati_${timeStr}.xlsx`;
         } else if (currentModalContext.type === 'sim_priority') {
             filename = `Step${currentModalContext.arg1 + 1}_Priorita${currentModalContext.arg2}_${timeStr}.xlsx`;
+        } else if (currentModalContext.type === 'score') {
+            filename = `Step${currentModalContext.arg1 + 1}_ScoreAlgoritmo_${timeStr}.xlsx`;
         }
 
         XLSX.writeFile(wb, filename);
