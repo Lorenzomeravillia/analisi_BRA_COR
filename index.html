@@ -483,18 +483,25 @@
             white-space: nowrap;
             text-align: center;
         }
-        thead th:first-child { text-align: left; }
+        thead th:nth-child(1), thead th:nth-child(2) { text-align: left; }
         thead th.col-total { background: #eef0f4; }
+        
         tbody td {
             padding: 10px 20px;
             text-align: center;
             border-bottom: 1px solid #f0f1f3;
             color: var(--text-secondary);
         }
-        tbody td:first-child {
+        tbody td:nth-child(1) {
             text-align: left;
             font-family: 'JetBrains Mono', monospace;
             font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--text);
+        }
+        tbody td:nth-child(2) {
+            text-align: left;
+            font-weight: 500;
             font-size: 0.82rem;
             color: var(--text);
         }
@@ -717,7 +724,8 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="text-align:left">Articolo Target</th>
+                            <th>Codice Articolo</th>
+                            <th>Descrizione Articolo</th>
                             <th>Priorità 1</th>
                             <th>Priorità 2</th>
                             <th>Priorità 3</th>
@@ -780,9 +788,10 @@
     let currentExportData = [];
     let currentModalContext = { type: '', article: '', priority: '' };
 
-    let colOrderIdx = 0;
-    let colPlantIdx = 2;
-    let colArticleIdx = 10;
+    let colOrderIdx = -1;
+    let colPlantIdx = -1;
+    let colArticleIdx = -1;
+    let colItemCodeIdx = -1;
 
     let dataIsLoaded = false; 
 
@@ -923,6 +932,20 @@
         $('sheetModal').classList.add('open');
     }
 
+    // ═══════════════════════════════════════════
+    //  STRICT EXACT MATCH FINDER
+    // ═══════════════════════════════════════════
+    function findExactColumnIndex(headersArr, candidates) {
+        for (let i = 0; i < headersArr.length; i++) {
+            const h = String(headersArr[i] || '').toLowerCase().trim();
+            // Verifica se 'h' combacia esattamente con uno dei candidati
+            if (candidates.some(c => c.toLowerCase() === h)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     function loadSheet(sheetName) {
         try {
             const worksheet = currentWorkbook.Sheets[sheetName];
@@ -939,42 +962,31 @@
             headers = originalRows[0];
             dbg(`Colonne trovate: ${headers.length}`, 'info');
 
-            // FORZA LA COLONNA A PER GLI ORDINI
-            colOrderIdx = 0; 
-            const expectedOrderHeader = 'customer order';
-            const actualOrderHeader = String(headers[0] || '').toLowerCase().trim();
+            // Identificazione rigorosa (case-insensitive) per nome ESATTO
+            colOrderIdx = findExactColumnIndex(headers, ['ordine cliente', 'customer order']);
+            colPlantIdx = findExactColumnIndex(headers, ['lista plant compatibili con sales bom', 'sales bom compliant plant list']);
+            colArticleIdx = findExactColumnIndex(headers, ['descrizione articolo', 'item description']);
+            colItemCodeIdx = findExactColumnIndex(headers, ['articolo', 'item']);
 
-            let proceed = true;
-            if (actualOrderHeader !== expectedOrderHeader) {
-                proceed = confirm(`Attenzione: l'intestazione della colonna A è "${headers[0] || '(vuota)'}" invece di "Customer order".\nSei sicuro di voler procedere usando comunque la colonna A come numero ordine?`);
-            }
+            // Controllo Sicurezza
+            let missingCols = [];
+            if (colOrderIdx === -1) missingCols.push("Ordine cliente / Customer order");
+            if (colPlantIdx === -1) missingCols.push("Lista plant compatibili con Sales BOM / Sales BOM Compliant Plant List");
+            if (colArticleIdx === -1) missingCols.push("Descrizione articolo / Item description");
+            if (colItemCodeIdx === -1) missingCols.push("Articolo / Item");
 
-            if (!proceed) {
+            if (missingCols.length > 0) {
+                const missingStr = missingCols.join("\n- ");
+                dbg(`Interrotto: Colonne mancanti:\n- ${missingStr}`, 'err');
+                alert(`Errore: Impossibile trovare le seguenti colonne necessarie nel file:\n\n- ${missingStr}\n\nL'elaborazione è stata interrotta.`);
                 showLoader(false);
-                dbg('Operazione annullata dall\'utente.', 'warn');
                 return;
             }
 
-            dbg(`Colonna Ordine forzata a: [0] "${headers[0]}"`, 'ok');
-
-            // Cerca le altre colonne
-            const colPlant = findColumnIndex(headers, ['sales bom compliant plant list', 'plant', 'impianto']);
-            const colArticle = findColumnIndex(headers, ['item description', 'articolo', 'descrizione articolo']);
-
-            if (colPlant !== -1) {
-                colPlantIdx = colPlant;
-                dbg(`Colonna Plant rilevata: [${colPlant}] "${headers[colPlant]}"`, 'ok');
-            } else {
-                colPlantIdx = 2;
-                dbg(`Colonna Plant non trovata per nome → fallback indice 2 ("${headers[2] || 'N/A'}")`, 'warn');
-            }
-            if (colArticle !== -1) {
-                colArticleIdx = colArticle;
-                dbg(`Colonna Articolo rilevata: [${colArticle}] "${headers[colArticle]}"`, 'ok');
-            } else {
-                colArticleIdx = 10;
-                dbg(`Colonna Articolo non trovata per nome → fallback indice 10 ("${headers[10] || 'N/A'}")`, 'warn');
-            }
+            dbg(`Colonna Ordine trovata: [${colOrderIdx}] "${headers[colOrderIdx]}"`, 'ok');
+            dbg(`Colonna Plant trovata: [${colPlantIdx}] "${headers[colPlantIdx]}"`, 'ok');
+            dbg(`Colonna Codice Articolo trovata: [${colItemCodeIdx}] "${headers[colItemCodeIdx]}"`, 'ok');
+            dbg(`Colonna Descr. Articolo trovata: [${colArticleIdx}] "${headers[colArticleIdx]}"`, 'ok');
 
             processData(originalRows);
 
@@ -982,22 +994,6 @@
             dbg(`Errore nel caricamento del foglio: ${err.message}`, 'err');
             showLoader(false);
         }
-    }
-
-    function findColumnIndex(headersArr, candidates) {
-        // Cerca la parola esatta
-        for (let i = 0; i < headersArr.length; i++) {
-            const h = String(headersArr[i] || '').toLowerCase().trim();
-            if (candidates.includes(h)) return i;
-        }
-        // Se fallisce, cerca se la colonna CONTIENE la parola
-        for (let i = 0; i < headersArr.length; i++) {
-            const h = String(headersArr[i] || '').toLowerCase().trim();
-            for (const c of candidates) {
-                if (h.includes(c)) return i;
-            }
-        }
-        return -1;
     }
 
     // ═══════════════════════════════════════════
@@ -1020,7 +1016,8 @@
             const row = data[i];
             const ordine = String(row[colOrderIdx] || "").trim();
             const plant = String(row[colPlantIdx] || "").trim();
-            const articolo = String(row[colArticleIdx] || "").trim();
+            const articoloDesc = String(row[colArticleIdx] || "").trim();
+            const articoloCode = String(row[colItemCodeIdx] || "").trim();
 
             rowsProcessed++;
 
@@ -1034,12 +1031,12 @@
             const orderItems = dictOrdini.get(ordine);
             const isBra = /BRA/i.test(plant); 
 
-            if (!orderItems.has(articolo)) {
-                orderItems.set(articolo, { isBra: isBra, count: 0 });
+            if (!orderItems.has(articoloDesc)) {
+                orderItems.set(articoloDesc, { isBra: isBra, count: 0, code: articoloCode });
             } else {
-                if (isBra) orderItems.get(articolo).isBra = true;
+                if (isBra) orderItems.get(articoloDesc).isBra = true;
             }
-            orderItems.get(articolo).count++;
+            orderItems.get(articoloDesc).count++;
         }
 
         dbg(`Righe processate: ${rowsProcessed} | No ordine: ${rowsSkippedNoOrder} | Plant vuoto: ${rowsSkippedEmptyPlant}`, 'info');
@@ -1068,45 +1065,42 @@
             let missingArticles = [];
             let hasTargetItem = false;
 
-            orderItems.forEach((info, articolo) => {
-                const matchesPrefix = articolo.includes(prefixInput);
+            orderItems.forEach((info, articoloDesc) => {
+                const matchesPrefix = articoloDesc.includes(prefixInput);
 
                 if (!matchesPrefix) {
-                    // Se c'è un articolo fuori famiglia e siamo in "Caso Reale", l'intero ordine è squalificato
                     if (isReal) {
                         isDisqualified = true;
                     }
                 } else {
-                    // È un articolo della famiglia target
                     hasTargetItem = true;
                     if (!info.isBra) {
-                        missingArticles.push(articolo); // Ci manca la produzione a BRA
+                        missingArticles.push(articoloDesc); 
                     }
                 }
             });
 
-            // Scartiamo l'ordine se: è squalificato dai filtri misti, OPPURE non ha nemmeno un articolo della famiglia target
             if (isDisqualified || !hasTargetItem) return;
 
             const missingCount = missingArticles.length;
 
             if (missingCount === 0) {
-                // L'ordine (o la porzione utile) è interamente producibile a BRA
                 baselineCount++;
                 dictOrdiniReali.add(ordine);
             } else {
-                // Popoliamo la matrice solo con gli articoli target mancanti
-                missingArticles.forEach(articolo => {
-                    if (!articleStats[articolo]) {
-                        articleStats[articolo] = { p1: 0, p2: 0, p3: 0, p4: 0, total: 0 };
+                missingArticles.forEach(articoloDesc => {
+                    if (!articleStats[articoloDesc]) {
+                        // Inizializza le statistiche e recupera il codice articolo
+                        const code = orderItems.get(articoloDesc).code;
+                        articleStats[articoloDesc] = { p1: 0, p2: 0, p3: 0, p4: 0, total: 0, code: code };
                     }
-                    const weight = (countMethod === 'righe') ? orderItems.get(articolo).count : 1;
+                    const weight = (countMethod === 'righe') ? orderItems.get(articoloDesc).count : 1;
 
-                    articleStats[articolo].total += weight;
-                    if (missingCount === 1) articleStats[articolo].p1 += weight;
-                    else if (missingCount === 2) articleStats[articolo].p2 += weight;
-                    else if (missingCount === 3) articleStats[articolo].p3 += weight;
-                    else if (missingCount > 3) articleStats[articolo].p4 += weight;
+                    articleStats[articoloDesc].total += weight;
+                    if (missingCount === 1) articleStats[articoloDesc].p1 += weight;
+                    else if (missingCount === 2) articleStats[articoloDesc].p2 += weight;
+                    else if (missingCount === 3) articleStats[articoloDesc].p3 += weight;
+                    else if (missingCount > 3) articleStats[articoloDesc].p4 += weight;
                 });
             }
         });
@@ -1141,13 +1135,13 @@
         tbody.innerHTML = '';
 
         if (sortedArticles.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
                 Nessun articolo target trovato con i parametri attuali.
             </td></tr>`;
         } else {
             const fragment = document.createDocumentFragment();
-            sortedArticles.forEach(art => {
-                const s = articleStats[art];
+            sortedArticles.forEach(artDesc => {
+                const s = articleStats[artDesc];
                 const tr = document.createElement('tr');
 
                 const cell = (val, art, prio) => {
@@ -1156,12 +1150,13 @@
                 };
 
                 tr.innerHTML =
-                    `<td>${art}</td>` +
-                    cell(s.p1, art, 1) +
-                    cell(s.p2, art, 2) +
-                    cell(s.p3, art, 3) +
-                    cell(s.p4, art, 4) +
-                    `<td class="col-total ${s.total > 0 ? 'clickable' : 'zero-val'}" ${s.total > 0 ? `onclick="triggerDrillDown('priority','${art.replace(/'/g, "\\'")}',0)"` : ''}>${s.total}</td>`;
+                    `<td>${s.code}</td>` +
+                    `<td>${artDesc}</td>` +
+                    cell(s.p1, artDesc, 1) +
+                    cell(s.p2, artDesc, 2) +
+                    cell(s.p3, artDesc, 3) +
+                    cell(s.p4, artDesc, 4) +
+                    `<td class="col-total ${s.total > 0 ? 'clickable' : 'zero-val'}" ${s.total > 0 ? `onclick="triggerDrillDown('priority','${artDesc.replace(/'/g, "\\'")}',0)"` : ''}>${s.total}</td>`;
 
                 fragment.appendChild(tr);
             });
@@ -1196,8 +1191,8 @@
                 let missingArticlesCount = 0;
                 let hasTargetItem = false;
 
-                orderItems.forEach((info, articolo) => {
-                    const matchesPrefix = articolo.includes(prefixInput);
+                orderItems.forEach((info, articoloDesc) => {
+                    const matchesPrefix = articoloDesc.includes(prefixInput);
                     if (!matchesPrefix) {
                         if (isReal) isDisqualified = true;
                     } else {
