@@ -452,6 +452,16 @@
             text-underline-offset: 2px;
         }
         .clickable:hover { background: var(--accent-light); color: var(--accent-hover); }
+        
+        .clickable-green {
+            color: var(--green);
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .clickable-green:hover { color: var(--green-hover); background: #dcfce7; border-radius: 4px; }
+        
         .zero-val { color: var(--text-muted); font-weight: 400; }
         .success-val { color: var(--green); font-weight: 700; background: var(--green-bg); border-radius: 4px; padding: 2px 6px;}
 
@@ -641,7 +651,7 @@
                 <p>Ordini senza blocchi all'inizio della simulazione</p>
             </div>
             <div class="baseline-value">
-                <span class="baseline-number" id="baselineCount" onclick="triggerDrillDown('baseline', null)" title="Clicca per espandere">0</span>
+                <span class="baseline-number" id="baselineCount" onclick="triggerDrillDown('baseline')" title="Clicca per espandere">0</span>
                 <span class="baseline-hint">Clicca per il dettaglio</span>
             </div>
         </div>
@@ -651,7 +661,7 @@
         <div class="table-card">
             <div class="table-header">
                 <h2>Roadmap Insegnamento BRA (Simulazione)</h2>
-                <p>La tabella mostra la sequenza ottimale. I valori in colonna indicano l'impatto dell'articolo calcolato <strong>nel momento in cui viene elaborato</strong> dal sistema.</p>
+                <p>La tabella mostra la sequenza ottimale. Clicca sui numeri per scaricare l'elenco esatto degli ordini bloccati a quello step.</p>
             </div>
             <div class="table-wrap">
                 <table>
@@ -664,7 +674,7 @@
                             <th title="Numero di ordini che scendono a 1 solo blocco residuo">Avanza a 1 blocco</th>
                             <th title="Numero di ordini che scendono a 2 blocchi residui">Avanza a 2 blocchi</th>
                             <th>Rimangono >3</th>
-                            <th class="col-total">Tot. Misti</th>
+                            <th class="col-total">Tot. Impatto</th>
                         </tr>
                     </thead>
                     <tbody id="reportTableBody"></tbody>
@@ -710,9 +720,10 @@
     let dictOrdini = new Map();
     let originalRows = [];
     let currentWorkbook = null; 
+    let currentRoadmap = []; // Salva lo stato step-by-step per il Drill-Down
 
     let currentExportData = [];
-    let currentModalContext = { type: '', target: '' };
+    let currentModalContext = { type: '', arg1: null, arg2: null };
 
     let colOrderIdx = -1;
     let colPlantIdx = -1;
@@ -869,6 +880,7 @@
     // ═══════════════════════════════════════════
     function simulateHolisticRoadmap() {
         dictOrdiniReali.clear(); 
+        currentRoadmap = []; // Resetta la memoria della roadmap
         
         const countMethod = document.querySelector('input[name="countMethod"]:checked').value;
         const isReal = $('isRealToggle').checked;
@@ -917,10 +929,9 @@
         $('baselineCount').textContent = dictOrdiniReali.size;
 
         // FASE 2: Simulazione Algoritmo (Effetto Domino)
-        let roadmap = [];
         let itemsToProcess = new Set(allTargetItems.keys());
         
-        // Scrematura iniziale: ignora articoli target che non bloccano nessun ordine (già imparati)
+        // Scrematura iniziale: ignora articoli target che non bloccano nessun ordine
         let actuallyMissing = new Set();
         activeOrders.forEach(missing => missing.forEach(m => actuallyMissing.add(m.desc)));
         itemsToProcess.forEach(item => { if (!actuallyMissing.has(item)) itemsToProcess.delete(item); });
@@ -933,29 +944,39 @@
 
             // Valuta ogni articolo rimasto
             itemsToProcess.forEach(candidate => {
-                let stats = { p1: 0, p2: 0, p3: 0, p4: 0, code: allTargetItems.get(candidate).code, totalImpact: 0 };
+                // Prepara contenitori vuoti per salvare gli ordini specifici
+                let stats = { 
+                    p1: 0, p2: 0, p3: 0, p4: 0, code: allTargetItems.get(candidate).code, totalImpact: 0,
+                    ordersP1: [], ordersP2: [], ordersP3: [], ordersP4: [], ordersTotal: []
+                };
                 let score = 0;
 
-                activeOrders.forEach(missingList => {
+                activeOrders.forEach((missingList, ordine) => {
                     let candidateObj = missingList.find(m => m.desc === candidate);
                     if (candidateObj) {
                         let w = candidateObj.weight;
                         let missingCount = missingList.length;
                         stats.totalImpact += w;
+                        stats.ordersTotal.push(ordine);
 
-                        // Pesi dello score (1,000,000 punti per sblocco completo, 10,000 per avanzamento, ecc.)
+                        // Pesi dello score (1 milione pti per sblocco, 10 mila per avanzamento, ecc.)
+                        // SALVIAMO l'id ordine nella rispettiva lista
                         if (missingCount === 1) {
                             stats.p1 += w;
                             score += w * 1000000;
+                            stats.ordersP1.push(ordine);
                         } else if (missingCount === 2) {
                             stats.p2 += w;
                             score += w * 10000;
+                            stats.ordersP2.push(ordine);
                         } else if (missingCount === 3) {
                             stats.p3 += w;
                             score += w * 100;
+                            stats.ordersP3.push(ordine);
                         } else {
                             stats.p4 += w;
                             score += w * 1;
+                            stats.ordersP4.push(ordine);
                         }
                     }
                 });
@@ -970,8 +991,8 @@
             // Se nessuno sblocca nulla di utile, termina
             if (!bestItem || bestScore === 0) break;
 
-            // Registra la mossa vincente per la Roadmap
-            roadmap.push({ desc: bestItem, stats: bestStats });
+            // Salva la mossa vincente e TUTTI i suoi dati associati nella roadmap globale
+            currentRoadmap.push({ desc: bestItem, stats: bestStats });
 
             // SIMULAZIONE: Insegniamo 'bestItem' a BRA
             let newlyReadyOrders = [];
@@ -998,7 +1019,7 @@
                 <span class="stat-label">Ordini Totali Letti</span>
             </div>
             <div class="stat-chip">
-                <span class="stat-num">${roadmap.length}</span>
+                <span class="stat-num">${currentRoadmap.length}</span>
                 <span class="stat-label">Articoli nella Roadmap Ottimizzata</span>
             </div>
         `;
@@ -1006,32 +1027,29 @@
         const tbody = $('reportTableBody');
         tbody.innerHTML = '';
 
-        if (roadmap.length === 0) {
+        if (currentRoadmap.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
                 Tutti gli ordini validi sono già interamente producibili a BRA. Non serve alcuna Roadmap.
             </td></tr>`;
         } else {
             const fragment = document.createDocumentFragment();
-            roadmap.forEach((itemData, index) => {
+            currentRoadmap.forEach((itemData, index) => {
                 const s = itemData.stats;
                 const artDesc = itemData.desc;
                 const tr = document.createElement('tr');
 
-                // Helper celle
-                const cP1 = s.p1 > 0 ? `<span class="success-val">+${s.p1}</span>` : `<span class="zero-val">0</span>`;
-                const cP2 = s.p2 > 0 ? s.p2 : `<span class="zero-val">0</span>`;
-                const cP3 = s.p3 > 0 ? s.p3 : `<span class="zero-val">0</span>`;
-                const cP4 = s.p4 > 0 ? s.p4 : `<span class="zero-val">0</span>`;
+                // Costruzione celle numeriche cliccabili
+                const cellP1 = s.p1 > 0 ? `<td><span class="success-val clickable-green" onclick="triggerDrillDown('sim_priority', ${index}, 1)">+${s.p1}</span></td>` : `<td class="zero-val">0</td>`;
+                const cellP2 = s.p2 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 2)">${s.p2}</td>` : `<td class="zero-val">0</td>`;
+                const cellP3 = s.p3 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 3)">${s.p3}</td>` : `<td class="zero-val">0</td>`;
+                const cellP4 = s.p4 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 4)">${s.p4}</td>` : `<td class="zero-val">0</td>`;
+                const cellTot = s.totalImpact > 0 ? `<td class="col-total clickable" onclick="triggerDrillDown('sim_priority', ${index}, 0)">${s.totalImpact}</td>` : `<td class="col-total zero-val">0</td>`;
 
                 tr.innerHTML =
                     `<td>${index + 1}</td>` +
                     `<td>${s.code}</td>` +
-                    `<td><span class="clickable" onclick="triggerDrillDown('item', '${artDesc.replace(/'/g, "\\'")}')" title="Mostra tutti gli ordini da sbloccare che contengono questo articolo">${artDesc}</span></td>` +
-                    `<td>${cP1}</td>` +
-                    `<td>${cP2}</td>` +
-                    `<td>${cP3}</td>` +
-                    `<td>${cP4}</td>` +
-                    `<td class="col-total">${s.totalImpact}</td>`;
+                    `<td><span class="clickable" onclick="triggerDrillDown('item', '${artDesc.replace(/'/g, "\\'")}')" title="Mostra gli ordini originariamente bloccati da questo articolo">${artDesc}</span></td>` +
+                    cellP1 + cellP2 + cellP3 + cellP4 + cellTot;
 
                 fragment.appendChild(tr);
             });
@@ -1046,21 +1064,40 @@
     // ═══════════════════════════════════════════
     //  DRILL-DOWN
     // ═══════════════════════════════════════════
-    function triggerDrillDown(type, targetStr) {
+    function triggerDrillDown(type, arg1, arg2) {
         const targetOrders = new Set();
-        currentModalContext = { type, target: targetStr };
+        currentModalContext = { type, arg1, arg2 };
 
         if (type === 'baseline') {
             $('modalTitle').textContent = "Dettaglio: Ordini Base (Pronti all'inizio)";
             dictOrdiniReali.forEach(ord => targetOrders.add(ord));
+        
         } else if (type === 'item') {
-            $('modalTitle').textContent = `Ordini bloccati contenenti: ${targetStr}`;
+            const targetStr = arg1;
+            $('modalTitle').textContent = `Ordini originariamente bloccati contenenti: ${targetStr}`;
             dictOrdini.forEach((orderItems, ordine) => {
-                // Se l'ordine ha l'articolo target, E non era tra quelli già "Pronti" (nella baseline)
                 if (orderItems.has(targetStr) && !dictOrdiniReali.has(ordine)) {
                     targetOrders.add(ordine);
                 }
             });
+            
+        } else if (type === 'sim_priority') {
+            // Estrazione esatta degli ordini dallo Step specifico della simulazione
+            const stepIndex = arg1;
+            const priorityLevel = arg2;
+            const stepData = currentRoadmap[stepIndex];
+            
+            let orderList = [];
+            let prioLabel = "";
+            
+            if (priorityLevel === 1) { orderList = stepData.stats.ordersP1; prioLabel = "Sblocca Subito (+100% completi)"; }
+            else if (priorityLevel === 2) { orderList = stepData.stats.ordersP2; prioLabel = "Avanzano a 1 blocco residuo"; }
+            else if (priorityLevel === 3) { orderList = stepData.stats.ordersP3; prioLabel = "Avanzano a 2 blocchi residui"; }
+            else if (priorityLevel === 4) { orderList = stepData.stats.ordersP4; prioLabel = "Restano con >3 blocchi"; }
+            else if (priorityLevel === 0) { orderList = stepData.stats.ordersTotal; prioLabel = "Totale ordini con impatto a questo step"; }
+
+            $('modalTitle').textContent = `Step ${stepIndex + 1} - ${stepData.desc} (${prioLabel})`;
+            orderList.forEach(ord => targetOrders.add(ord));
         }
 
         if (targetOrders.size === 0) return;
@@ -1126,8 +1163,13 @@
         const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0') + String(now.getSeconds()).padStart(2, '0');
         
         let filename = "Export.xlsx";
-        if (currentModalContext.type === 'baseline') filename = `OrdiniPronti_${timeStr}.xlsx`;
-        else filename = `${currentModalContext.target.replace(/[%/\\]/g, "").substring(0, 10)}_Bloccati_${timeStr}.xlsx`;
+        if (currentModalContext.type === 'baseline') {
+            filename = `OrdiniPronti_${timeStr}.xlsx`;
+        } else if (currentModalContext.type === 'item') {
+            filename = `${currentModalContext.arg1.replace(/[%/\\]/g, "").substring(0, 10)}_Bloccati_${timeStr}.xlsx`;
+        } else if (currentModalContext.type === 'sim_priority') {
+            filename = `Step${currentModalContext.arg1 + 1}_Priorita${currentModalContext.arg2}_${timeStr}.xlsx`;
+        }
 
         XLSX.writeFile(wb, filename);
     }
