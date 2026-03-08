@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report RND Ordini - Roadmap Olistica v2</title>
+    <title>Report RND Ordini - Roadmap Olistica v3</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -210,6 +210,82 @@
             font-style: italic;
         }
 
+        /* FILTER PANEL */
+        .filter-panel {
+            display: none; margin-bottom: 24px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); overflow: hidden;
+        }
+        .filter-panel.visible { display: block; }
+        .filter-header {
+            padding: 14px 20px; display: flex; align-items: center;
+            justify-content: space-between; gap: 12px;
+            border-bottom: 1px solid var(--border); cursor: pointer;
+            transition: background 0.15s; user-select: none;
+        }
+        .filter-header:hover { background: var(--surface-alt); }
+        .filter-header-left { display: flex; align-items: center; gap: 10px; }
+        .filter-header-left svg { flex-shrink: 0; color: var(--accent); }
+        .filter-header h3 { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+        .filter-header .filter-summary { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+        .filter-header .filter-badge {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+            font-weight: 700; color: var(--accent); background: var(--accent-light);
+            border: 1px solid var(--accent-border); border-radius: 6px;
+            padding: 3px 10px;
+        }
+        .filter-header .filter-badge.active-filter { color: var(--amber); background: var(--amber-bg); border-color: var(--amber-border); }
+        .filter-chevron { transition: transform 0.2s; color: var(--text-muted); }
+        .filter-panel.collapsed .filter-chevron { transform: rotate(-90deg); }
+        .filter-panel.collapsed .filter-body { display: none; }
+        .filter-body { padding: 16px 20px; }
+        .filter-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        .filter-col-group {
+            background: var(--surface-alt); border: 1px solid var(--border);
+            border-radius: 8px; padding: 12px; max-height: 220px;
+            display: flex; flex-direction: column;
+        }
+        .filter-col-title {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .filter-col-title .filter-col-actions { display: flex; gap: 6px; }
+        .filter-col-title .filter-col-actions button {
+            font-size: 0.65rem; font-weight: 600; padding: 2px 6px;
+            border-radius: 4px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text-muted);
+            cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .filter-col-title .filter-col-actions button:hover { border-color: var(--accent); color: var(--accent); }
+        .filter-options {
+            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px;
+        }
+        .filter-opt {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px 6px; border-radius: 4px; cursor: pointer;
+            transition: background 0.1s; font-size: 0.82rem;
+        }
+        .filter-opt:hover { background: var(--surface); }
+        .filter-opt input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+        .filter-opt label { cursor: pointer; flex: 1; color: var(--text-secondary); display: flex; justify-content: space-between; }
+        .filter-opt label .filter-val-count {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+            color: var(--text-muted); margin-left: 8px;
+        }
+        .filter-opt.unchecked label { color: var(--text-muted); text-decoration: line-through; }
+        .filter-actions {
+            padding: 12px 20px; border-top: 1px solid var(--border);
+            display: flex; gap: 10px; align-items: center;
+        }
+        .filter-row-count {
+            margin-left: auto; font-size: 0.82rem; color: var(--text-secondary);
+        }
+        .filter-row-count strong { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+
         .debug-panel { display: none; margin-bottom: 24px; background: #1a1d23; border-radius: var(--radius); overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
         .debug-panel.visible { display: block; }
         .debug-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #2a2d33; color: #9aa0ab; }
@@ -333,8 +409,8 @@
 <div class="container">
     <header>
         <h1>Analisi Report RND</h1>
-        <span class="badge">Client-Side v2</span>
-        <p>Roadmap Olistica con Esclusione Articoli: escludi articoli non industrializzabili e ricalcola l'impatto.</p>
+        <span class="badge">Client-Side v3</span>
+        <p>Roadmap Olistica con Filtri Dati ed Esclusione Articoli: filtra il perimetro di analisi e gestisci articoli non industrializzabili.</p>
     </header>
 
     <div class="controls-panel">
@@ -374,6 +450,30 @@
                     <div class="file-loaded" id="fileLoadedMsg"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span id="fileLoadedName"></span></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- FILTER PANEL (appears after file load) -->
+    <div class="filter-panel" id="filterPanel">
+        <div class="filter-header" onclick="toggleFilterPanel()">
+            <div class="filter-header-left">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                <div>
+                    <h3>Filtri Dati <span class="filter-summary" id="filterSummary"></span></h3>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span class="filter-badge" id="filterBadge">Nessun filtro</span>
+                <svg class="filter-chevron" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+        </div>
+        <div class="filter-body">
+            <div class="filter-grid" id="filterGrid"></div>
+        </div>
+        <div class="filter-actions">
+            <button class="btn-sm btn-recalc-excl" onclick="applyFiltersAndRecalc()">Applica Filtri e Ricalcola</button>
+            <button class="btn-sm btn-clear-all" style="background:#e5e7eb;color:var(--text);" onclick="resetAllFilters()">Reset Filtri</button>
+            <span class="filter-row-count" id="filterRowCount"></span>
         </div>
     </div>
 
@@ -477,7 +577,196 @@
     let dataIsLoaded = false;
 
     // EXCLUSION STATE
-    let excludedArticles = new Set(); // Set of article descriptions permanently excluded
+    let excludedArticles = new Set();
+
+    // FILTER STATE
+    let filterConfig = new Map(); // colIdx -> { header, values: Map(value -> {count, checked}) }
+    let filteredRows = []; // rows after filter applied
+    const MIN_DISTINCT = 2;
+    const MAX_DISTINCT = 40;
+
+    // ═══════════════════════════════════════════
+    //  FILTER SYSTEM
+    // ═══════════════════════════════════════════
+    function scanColumnsForFilters(data) {
+        filterConfig.clear();
+        if (data.length < 2) return;
+
+        const hdr = data[0];
+        // Skip the 4 core columns used by the algorithm (they shouldn't be filtered)
+        const skipIdxs = new Set([colOrderIdx, colPlantIdx, colArticleIdx, colItemCodeIdx]);
+
+        for (let c = 0; c < hdr.length; c++) {
+            if (skipIdxs.has(c)) continue;
+            const colName = String(hdr[c] || '').trim();
+            if (!colName) continue;
+
+            // Count distinct values
+            const valCounts = new Map();
+            for (let r = 1; r < data.length; r++) {
+                const v = String(data[r][c] || '').trim();
+                if (v === '' || v === 'undefined' || v === 'null') continue;
+                valCounts.set(v, (valCounts.get(v) || 0) + 1);
+            }
+
+            const distinct = valCounts.size;
+            if (distinct >= MIN_DISTINCT && distinct <= MAX_DISTINCT) {
+                const values = new Map();
+                // Sort by count desc
+                const sorted = [...valCounts.entries()].sort((a, b) => b[1] - a[1]);
+                sorted.forEach(([val, cnt]) => {
+                    values.set(val, { count: cnt, checked: true });
+                });
+                filterConfig.set(c, { header: colName, values: values });
+            }
+        }
+        dbg(`Filtri auto-rilevati: ${filterConfig.size} colonne categoriche`, 'ok');
+    }
+
+    function renderFilterPanel() {
+        const panel = $('filterPanel');
+        const grid = $('filterGrid');
+
+        if (filterConfig.size === 0) {
+            panel.classList.remove('visible');
+            return;
+        }
+
+        panel.classList.add('visible');
+        grid.innerHTML = '';
+
+        filterConfig.forEach((colConf, colIdx) => {
+            const group = document.createElement('div');
+            group.className = 'filter-col-group';
+
+            const title = document.createElement('div');
+            title.className = 'filter-col-title';
+            title.innerHTML = `<span>${colConf.header}</span>
+                <span class="filter-col-actions">
+                    <button onclick="toggleFilterCol(${colIdx}, true)">Tutti</button>
+                    <button onclick="toggleFilterCol(${colIdx}, false)">Nessuno</button>
+                </span>`;
+            group.appendChild(title);
+
+            const opts = document.createElement('div');
+            opts.className = 'filter-options';
+            opts.id = `filterOpts_${colIdx}`;
+
+            colConf.values.forEach((info, val) => {
+                const opt = document.createElement('div');
+                opt.className = 'filter-opt' + (info.checked ? '' : ' unchecked');
+                const id = `f_${colIdx}_${val.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                opt.innerHTML = `<input type="checkbox" id="${id}" ${info.checked ? 'checked' : ''} 
+                    onchange="onFilterChange(${colIdx}, '${val.replace(/'/g, "\\'")}', this.checked)">
+                    <label for="${id}"><span>${val}</span><span class="filter-val-count">${info.count}</span></label>`;
+                opts.appendChild(opt);
+            });
+
+            group.appendChild(opts);
+            grid.appendChild(group);
+        });
+
+        updateFilterCountDisplay();
+    }
+
+    function onFilterChange(colIdx, val, checked) {
+        const colConf = filterConfig.get(colIdx);
+        if (!colConf) return;
+        const info = colConf.values.get(val);
+        if (info) info.checked = checked;
+
+        // Update visual
+        const opts = $(`filterOpts_${colIdx}`);
+        if (opts) {
+            opts.querySelectorAll('.filter-opt').forEach(opt => {
+                const cb = opt.querySelector('input');
+                opt.classList.toggle('unchecked', !cb.checked);
+            });
+        }
+        updateFilterCountDisplay();
+        // Show recalc bar
+        if (dataIsLoaded) $('recalcBar').classList.add('visible');
+    }
+
+    function toggleFilterCol(colIdx, selectAll) {
+        const colConf = filterConfig.get(colIdx);
+        if (!colConf) return;
+        colConf.values.forEach(info => { info.checked = selectAll; });
+        renderFilterPanel(); // re-render to update checkboxes
+        if (dataIsLoaded) $('recalcBar').classList.add('visible');
+    }
+
+    function resetAllFilters() {
+        filterConfig.forEach(colConf => {
+            colConf.values.forEach(info => { info.checked = true; });
+        });
+        renderFilterPanel();
+        applyFiltersAndRecalc();
+    }
+
+    function toggleFilterPanel() {
+        $('filterPanel').classList.toggle('collapsed');
+    }
+
+    function updateFilterCountDisplay() {
+        let activeFilters = 0;
+        filterConfig.forEach(colConf => {
+            const total = colConf.values.size;
+            const checked = [...colConf.values.values()].filter(v => v.checked).length;
+            if (checked < total) activeFilters++;
+        });
+
+        const badge = $('filterBadge');
+        const summary = $('filterSummary');
+        if (activeFilters > 0) {
+            badge.textContent = `${activeFilters} filtri attivi`;
+            badge.classList.add('active-filter');
+        } else {
+            badge.textContent = 'Nessun filtro';
+            badge.classList.remove('active-filter');
+        }
+
+        // Count filtered rows
+        const count = countFilteredRows();
+        const total = originalRows.length - 1;
+        $('filterRowCount').innerHTML = `<strong>${count.toLocaleString()}</strong> / ${total.toLocaleString()} righe`;
+    }
+
+    function countFilteredRows() {
+        let count = 0;
+        for (let r = 1; r < originalRows.length; r++) {
+            if (rowPassesFilters(originalRows[r])) count++;
+        }
+        return count;
+    }
+
+    function rowPassesFilters(row) {
+        for (const [colIdx, colConf] of filterConfig) {
+            const val = String(row[colIdx] || '').trim();
+            if (val === '' || val === 'undefined' || val === 'null') continue; // empty values pass
+            const info = colConf.values.get(val);
+            if (info && !info.checked) return false;
+        }
+        return true;
+    }
+
+    function getFilteredRows() {
+        const result = [originalRows[0]]; // header
+        for (let r = 1; r < originalRows.length; r++) {
+            if (rowPassesFilters(originalRows[r])) result.push(originalRows[r]);
+        }
+        return result;
+    }
+
+    function applyFiltersAndRecalc() {
+        if (!originalRows || originalRows.length === 0) return;
+        $('recalcBar').classList.remove('visible');
+        showLoader(true);
+        const filtered = getFilteredRows();
+        dbg(`Filtri applicati: ${filtered.length - 1} righe su ${originalRows.length - 1}`, 'info');
+        filteredRows = filtered;
+        setTimeout(() => { processData(filteredRows); }, 50);
+    } // Set of article descriptions permanently excluded
 
     // ═══════════════════════════════════════════
     //  DEBUG
@@ -508,8 +797,9 @@
         if (!originalRows || originalRows.length === 0) return;
         $('recalcBar').classList.remove('visible');
         showLoader(true);
-        dbg('Ricalcolo con ' + excludedArticles.size + ' articoli esclusi...', 'info');
-        setTimeout(() => { processData(originalRows); }, 50);
+        filteredRows = getFilteredRows();
+        dbg('Ricalcolo: ' + excludedArticles.size + ' esclusi, ' + (filteredRows.length-1) + ' righe filtrate', 'info');
+        setTimeout(() => { processData(filteredRows); }, 50);
     }
 
     const uploadZone = $('uploadZone');
@@ -606,8 +896,27 @@
     function loadSheet(sheetName) {
         try {
             const worksheet = currentWorkbook.Sheets[sheetName];
-            originalRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-            if (originalRows.length === 0) { showLoader(false); return; }
+            const allRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+            if (allRows.length === 0) { showLoader(false); return; }
+
+            // ── Respect Excel filters: skip hidden rows ──
+            const sheetRows = worksheet['!rows'] || [];
+            let hiddenCount = 0;
+            originalRows = [allRows[0]]; // Always keep header
+            for (let i = 1; i < allRows.length; i++) {
+                const rowMeta = sheetRows[i];
+                if (rowMeta && rowMeta.hidden) {
+                    hiddenCount++;
+                } else {
+                    originalRows.push(allRows[i]);
+                }
+            }
+            if (hiddenCount > 0) {
+                dbg(`Filtro Excel rilevato: ${hiddenCount} righe nascoste escluse, ${originalRows.length - 1} righe visibili caricate`, 'warn');
+            } else {
+                dbg(`${originalRows.length - 1} righe dati caricate (nessun filtro Excel attivo)`, 'ok');
+            }
+
             headers = originalRows[0];
             colOrderIdx = findExactColumnIndex(headers, ['ordine cliente', 'customer order']);
             colPlantIdx = findExactColumnIndex(headers, ['lista plant compatibili con sales bom', 'sales bom compliant plant list']);
@@ -622,7 +931,12 @@
                 alert(`Errore: colonne mancanti:\n\n- ${missingCols.join("\n- ")}`);
                 showLoader(false); return;
             }
-            processData(originalRows);
+            // Scan for filterable columns and render filter panel
+            scanColumnsForFilters(originalRows);
+            renderFilterPanel();
+            // First run: use all rows (no filters active)
+            filteredRows = originalRows;
+            processData(filteredRows);
         } catch (err) { dbg(`Errore: ${err.message}`, 'err'); showLoader(false); }
     }
 
@@ -779,10 +1093,18 @@
             </div>`;
         }
 
+        let filterChipHtml = '';
+        if (filteredRows.length > 0 && filteredRows.length < originalRows.length) {
+            filterChipHtml = `<div class="stat-chip" style="border-color:var(--amber-border);background:var(--amber-bg);">
+                <span class="stat-num" style="color:var(--amber);">${filteredRows.length - 1}</span>
+                <span class="stat-label">Righe Filtrate (su ${originalRows.length - 1})</span>
+            </div>`;
+        }
+
         $('summaryBar').innerHTML = `
-            <div class="stat-chip"><span class="stat-num">${dictOrdini.size}</span><span class="stat-label">Ordini Totali</span></div>
+            <div class="stat-chip"><span class="stat-num">${dictOrdini.size}</span><span class="stat-label">Ordini Analizzati</span></div>
             <div class="stat-chip"><span class="stat-num">${currentRoadmap.length}</span><span class="stat-label">Articoli nella Roadmap</span></div>
-            ${exclChipHtml}
+            ${filterChipHtml}${exclChipHtml}
         `;
 
         if (excludedArticles.size > 0) {
@@ -865,9 +1187,11 @@
 
         if (targetOrders.size === 0) return;
         const resultRows = [];
-        for (let i = 1; i < originalRows.length; i++) {
-            const ord = String(originalRows[i][colOrderIdx] || "").trim();
-            if (targetOrders.has(ord)) resultRows.push(originalRows[i]);
+        // Use filteredRows (respects both Excel hidden rows and client-side filters)
+        const sourceRows = (filteredRows && filteredRows.length > 1) ? filteredRows : originalRows;
+        for (let i = 1; i < sourceRows.length; i++) {
+            const ord = String(sourceRows[i][colOrderIdx] || "").trim();
+            if (targetOrders.has(ord)) resultRows.push(sourceRows[i]);
         }
         currentExportData = [headers, ...resultRows];
         renderModalData(headers, resultRows, customModalInfo);
