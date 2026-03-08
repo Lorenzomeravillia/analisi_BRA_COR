@@ -113,7 +113,6 @@
         }
         .radio-label:hover { background: var(--surface-alt); }
         .radio-label input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; }
-        .radio-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; padding-left: 4px; }
 
         .upload-zone {
             flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -299,6 +298,24 @@
         #resultsArea { display: none; }
         #resultsArea.visible { display: block; }
 
+        /* ANOMALY ALERT */
+        .anomaly-alert {
+            display: none; margin-bottom: 24px; background: var(--amber-bg);
+            border: 1px solid var(--amber-border); border-radius: var(--radius-lg);
+            padding: 16px 22px; align-items: flex-start; gap: 14px;
+        }
+        .anomaly-alert.visible { display: flex; }
+        .anomaly-alert svg { flex-shrink: 0; color: var(--amber); margin-top: 2px; }
+        .anomaly-content { flex: 1; }
+        .anomaly-content h4 { font-size: 0.95rem; color: #92400e; font-weight: 700; margin-bottom: 4px; }
+        .anomaly-content p { font-size: 0.82rem; color: #b45309; line-height: 1.5; }
+        .anomaly-btn {
+            background: var(--amber); color: white; border: none; padding: 7px 16px;
+            border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+            transition: background 0.15s; margin-top: 10px; font-family: inherit;
+        }
+        .anomaly-btn:hover { background: #b45309; }
+
         .baseline-card {
             background: var(--accent-light); border: 1px solid var(--accent-border);
             border-radius: var(--radius-lg); padding: 22px 28px;
@@ -452,7 +469,7 @@
     <header>
         <h1>Analisi Report RND</h1>
         <span class="badge">Client-Side v3</span>
-        <p>Roadmap Olistica con Filtri Dati ed Esclusione Articoli: filtra il perimetro di analisi e gestisci articoli non industrializzabili.</p>
+        <p>Roadmap Olistica con Filtri Dati, Esclusione Articoli e Rilevamento Anomalie Distinte.</p>
     </header>
 
     <div class="controls-panel">
@@ -504,7 +521,6 @@
         </div>
     </div>
 
-    <!-- FILTER PANEL (appears after file load) -->
     <div class="filter-panel" id="filterPanel">
         <div class="filter-header" onclick="toggleFilterPanel()">
             <div class="filter-header-left">
@@ -528,7 +544,6 @@
         </div>
     </div>
 
-    <!-- EXCLUSION PANEL -->
     <div class="exclusion-panel" id="exclusionPanel">
         <div class="exclusion-header">
             <div class="exclusion-header-left">
@@ -567,6 +582,15 @@
     <div class="loader-wrap" id="loader"><div class="spinner"></div><span class="loader-text">Simulazione Roadmap in corso…</span></div>
 
     <div id="resultsArea">
+        <div class="anomaly-alert" id="anomalyAlert">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div class="anomaly-content">
+                <h4>Attenzione: Componentistiche Miste Rilevate</h4>
+                <p>Sono stati individuati <strong id="anomalyCount">0</strong> articoli che, all'interno dello stesso ordine, presentano alcune posizioni producibili a BRA e altre solo a COR. L'algoritmo richiede prudenzialmente che <strong>tutte le posizioni</strong> di un articolo siano a BRA per classificarlo come "Già Pronto".</p>
+                <button class="anomaly-btn" onclick="triggerDrillDown('anomalies')">Vedi posizioni miste</button>
+            </div>
+        </div>
+
         <div class="baseline-card">
             <div class="baseline-label">
                 <h2>Ordini Base (Già a BRA)</h2>
@@ -579,7 +603,6 @@
         </div>
         <div class="summary-bar" id="summaryBar"></div>
 
-        <!-- NAIVE vs ALGO comparison card -->
         <div class="comparison-card" id="comparisonCard" style="display:none;">
             <div class="comp-header">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -640,15 +663,16 @@
     let currentRoadmap = [];
     let currentExportData = [];
     let currentModalContext = { type: '', arg1: null, arg2: null };
-    let colOrderIdx = -1, colPlantIdx = -1, colArticleIdx = -1, colItemCodeIdx = -1;
+    let colOrderIdx = -1, colPlantIdx = -1, colArticleIdx = -1, colItemCodeIdx = -1, colCoLineIdx = -1;
     let dataIsLoaded = false;
+    let anomalieMiste = []; // Memorizza gli articoli con plant misti nello stesso ordine
 
     // EXCLUSION STATE
     let excludedArticles = new Set();
 
     // FILTER STATE
-    let filterConfig = new Map(); // colIdx -> { header, values: Map(value -> {count, checked}) }
-    let filteredRows = []; // rows after filter applied
+    let filterConfig = new Map();
+    let filteredRows = [];
     const MIN_DISTINCT = 2;
     const MAX_DISTINCT = 40;
 
@@ -660,7 +684,6 @@
         if (data.length < 2) return;
 
         const hdr = data[0];
-        // Skip the 4 core columns used by the algorithm (they shouldn't be filtered)
         const skipIdxs = new Set([colOrderIdx, colPlantIdx, colArticleIdx, colItemCodeIdx]);
 
         for (let c = 0; c < hdr.length; c++) {
@@ -668,7 +691,6 @@
             const colName = String(hdr[c] || '').trim();
             if (!colName) continue;
 
-            // Count distinct values
             const valCounts = new Map();
             for (let r = 1; r < data.length; r++) {
                 const v = String(data[r][c] || '').trim();
@@ -679,7 +701,6 @@
             const distinct = valCounts.size;
             if (distinct >= MIN_DISTINCT && distinct <= MAX_DISTINCT) {
                 const values = new Map();
-                // Sort by count desc
                 const sorted = [...valCounts.entries()].sort((a, b) => b[1] - a[1]);
                 sorted.forEach(([val, cnt]) => {
                     values.set(val, { count: cnt, checked: true });
@@ -742,7 +763,6 @@
         const info = colConf.values.get(val);
         if (info) info.checked = checked;
 
-        // Update visual
         const opts = $(`filterOpts_${colIdx}`);
         if (opts) {
             opts.querySelectorAll('.filter-opt').forEach(opt => {
@@ -751,7 +771,6 @@
             });
         }
         updateFilterCountDisplay();
-        // Show recalc bar
         if (dataIsLoaded) $('recalcBar').classList.add('visible');
     }
 
@@ -759,7 +778,7 @@
         const colConf = filterConfig.get(colIdx);
         if (!colConf) return;
         colConf.values.forEach(info => { info.checked = selectAll; });
-        renderFilterPanel(); // re-render to update checkboxes
+        renderFilterPanel();
         if (dataIsLoaded) $('recalcBar').classList.add('visible');
     }
 
@@ -793,7 +812,6 @@
             badge.classList.remove('active-filter');
         }
 
-        // Count filtered rows
         const count = countFilteredRows();
         const total = originalRows.length - 1;
         $('filterRowCount').innerHTML = `<strong>${count.toLocaleString()}</strong> / ${total.toLocaleString()} righe`;
@@ -810,7 +828,7 @@
     function rowPassesFilters(row) {
         for (const [colIdx, colConf] of filterConfig) {
             const val = String(row[colIdx] || '').trim();
-            if (val === '' || val === 'undefined' || val === 'null') continue; // empty values pass
+            if (val === '' || val === 'undefined' || val === 'null') continue;
             const info = colConf.values.get(val);
             if (info && !info.checked) return false;
         }
@@ -818,7 +836,7 @@
     }
 
     function getFilteredRows() {
-        const result = [originalRows[0]]; // header
+        const result = [originalRows[0]];
         for (let r = 1; r < originalRows.length; r++) {
             if (rowPassesFilters(originalRows[r])) result.push(originalRows[r]);
         }
@@ -833,7 +851,7 @@
         dbg(`Filtri applicati: ${filtered.length - 1} righe su ${originalRows.length - 1}`, 'info');
         filteredRows = filtered;
         setTimeout(() => { processData(filteredRows); }, 50);
-    } // Set of article descriptions permanently excluded
+    }
 
     // ═══════════════════════════════════════════
     //  DEBUG
@@ -967,10 +985,9 @@
             const allRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
             if (allRows.length === 0) { showLoader(false); return; }
 
-            // ── Respect Excel filters: skip hidden rows ──
             const sheetRows = worksheet['!rows'] || [];
             let hiddenCount = 0;
-            originalRows = [allRows[0]]; // Always keep header
+            originalRows = [allRows[0]];
             for (let i = 1; i < allRows.length; i++) {
                 const rowMeta = sheetRows[i];
                 if (rowMeta && rowMeta.hidden) {
@@ -990,6 +1007,8 @@
             colPlantIdx = findExactColumnIndex(headers, ['lista plant compatibili con sales bom', 'sales bom compliant plant list']);
             colArticleIdx = findExactColumnIndex(headers, ['descrizione articolo', 'item description']);
             colItemCodeIdx = findExactColumnIndex(headers, ['articolo', 'item']);
+            colCoLineIdx = findExactColumnIndex(headers, ['co line', 'riga ordine', 'posizione']);
+
             let missingCols = [];
             if (colOrderIdx === -1) missingCols.push("Ordine cliente / Customer order");
             if (colPlantIdx === -1) missingCols.push("Lista plant compatibili / Sales BOM Compliant Plant List");
@@ -999,37 +1018,65 @@
                 alert(`Errore: colonne mancanti:\n\n- ${missingCols.join("\n- ")}`);
                 showLoader(false); return;
             }
-            // Scan for filterable columns and render filter panel
+
             scanColumnsForFilters(originalRows);
             renderFilterPanel();
-            // First run: use all rows (no filters active)
             filteredRows = originalRows;
             processData(filteredRows);
         } catch (err) { dbg(`Errore: ${err.message}`, 'err'); showLoader(false); }
     }
 
     // ═══════════════════════════════════════════
-    //  CORE LOGIC
+    //  CORE LOGIC & ANOMALY DETECTION
     // ═══════════════════════════════════════════
     function processData(data) {
         dictOrdini.clear();
+        anomalieMiste = []; // Reset delle anomalie
+
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
             const ordine = String(row[colOrderIdx] || "").trim();
             const plant = String(row[colPlantIdx] || "").trim();
             const articoloDesc = String(row[colArticleIdx] || "").trim();
             const articoloCode = String(row[colItemCodeIdx] || "").trim();
+            
             if (!ordine || plant === "") continue;
+            
             if (!dictOrdini.has(ordine)) dictOrdini.set(ordine, new Map());
             const orderItems = dictOrdini.get(ordine);
             const isBra = /BRA/i.test(plant);
+
             if (!orderItems.has(articoloDesc)) {
-                orderItems.set(articoloDesc, { isBra: isBra, count: 0, code: articoloCode });
+                orderItems.set(articoloDesc, { 
+                    isBra: isBra, 
+                    count: 0, 
+                    code: articoloCode,
+                    hasBra: isBra,
+                    hasCor: !isBra 
+                });
             } else {
-                if (isBra) orderItems.get(articoloDesc).isBra = true;
+                let itemData = orderItems.get(articoloDesc);
+                
+                // Traccia se l'articolo per questo ordine ha varianti di plant miste
+                if (isBra) itemData.hasBra = true;
+                if (!isBra) itemData.hasCor = true;
+
+                // LOGICA RESTRITTIVA (AND logico):
+                // Se c'è anche solo una riga NON a BRA, l'intero articolo scende a false
+                if (!isBra) itemData.isBra = false;
             }
             orderItems.get(articoloDesc).count++;
         }
+
+        // Estrazione anomalie per la UI
+        dictOrdini.forEach((orderItems, ordine) => {
+            orderItems.forEach((info, articoloDesc) => {
+                if (info.hasBra && info.hasCor) {
+                    anomalieMiste.push({ ordine, articoloDesc });
+                }
+            });
+        });
+
         dataIsLoaded = true;
         simulateHolisticRoadmap();
     }
@@ -1048,13 +1095,13 @@
 
         let activeOrders = new Map();
         let allTargetItems = new Map();
-        let permanentlyBlockedOrders = new Set(); // Orders blocked by excluded articles
+        let permanentlyBlockedOrders = new Set(); 
 
         dictOrdini.forEach((orderItems, ordine) => {
             let isDisqualified = false;
             let missingArticles = [];
             let hasTargetItem = false;
-            let hasExcludedBlocker = false; // Does this order contain an excluded article that's not BRA?
+            let hasExcludedBlocker = false; 
 
             orderItems.forEach((info, articoloDesc) => {
                 const matchesPrefix = articoloDesc.includes(prefixInput);
@@ -1070,9 +1117,8 @@
                     allTargetItems.get(articoloDesc).totalWeight += weight;
 
                     if (!info.isBra) {
-                        // Check if this missing article is EXCLUDED
                         if (excludedArticles.has(articoloDesc)) {
-                            hasExcludedBlocker = true; // This order can NEVER be unblocked
+                            hasExcludedBlocker = true; 
                         } else {
                             missingArticles.push({ desc: articoloDesc, weight: weight });
                         }
@@ -1083,7 +1129,6 @@
             if (isDisqualified || !hasTargetItem) return;
 
             if (hasExcludedBlocker) {
-                // Order is permanently blocked — excluded articles can never be taught
                 permanentlyBlockedOrders.add(ordine);
             } else if (missingArticles.length === 0) {
                 dictOrdiniReali.add(ordine);
@@ -1098,9 +1143,7 @@
             dbg(`Articoli esclusi: ${excludedArticles.size} → ${permanentlyBlockedOrders.size} ordini permanentemente bloccati`, 'warn');
         }
 
-        // PHASE 2: Greedy simulation (same as before, but excludedArticles are not candidates)
         let itemsToProcess = new Set(allTargetItems.keys());
-        // Remove excluded articles from candidates
         excludedArticles.forEach(ea => itemsToProcess.delete(ea));
 
         let actuallyMissing = new Set();
@@ -1152,14 +1195,11 @@
             itemsToProcess.delete(bestItem);
         }
 
-        // ── PHASE 2b: NAIVE (static) simulation for comparison ──
         let naiveCumulative = [];
         const showNaive = $('showNaiveToggle').checked;
 
         if (showNaive && currentRoadmap.length > 0) {
-            // Naive approach: sort articles by how many orders they block (static count, no simulation)
             let naiveStaticCounts = new Map();
-            // Rebuild activeOrders fresh for naive sim
             let naiveActive = new Map();
             dictOrdini.forEach((orderItems, ordine) => {
                 let isDQ = false; let miss = []; let hasT = false; let hasEB = false;
@@ -1178,19 +1218,16 @@
                 if (miss.length > 0) naiveActive.set(ordine, miss);
             });
 
-            // Count static blocking
             naiveActive.forEach((miss) => {
                 miss.forEach(m => {
                     naiveStaticCounts.set(m.desc, (naiveStaticCounts.get(m.desc) || 0) + 1);
                 });
             });
 
-            // Sort by static count descending
             let naiveOrder = [...naiveStaticCounts.entries()]
                 .sort((a, b) => b[1] - a[1])
                 .map(e => e[0]);
 
-            // Simulate naive sequence
             let naiveCum = 0;
             for (const art of naiveOrder) {
                 let unlocked = 0;
@@ -1210,11 +1247,18 @@
             }
         }
 
-        // Also compute algo cumulative for comparison
         let algoCumulative = [];
         { let c = 0; currentRoadmap.forEach(item => { c += item.stats.p1; algoCumulative.push(c); }); }
 
-        // PHASE 3: Render
+        // RENDER UI & ANOMALY ALERT
+        const alertPanel = $('anomalyAlert');
+        if (anomalieMiste.length > 0) {
+            $('anomalyCount').textContent = anomalieMiste.length;
+            alertPanel.classList.add('visible');
+        } else {
+            alertPanel.classList.remove('visible');
+        }
+
         let exclChipHtml = '';
         if (excludedArticles.size > 0) {
             exclChipHtml = `<div class="stat-chip stat-excluded">
@@ -1275,17 +1319,14 @@
             tbody.appendChild(fragment);
         }
 
-        // ── Render comparison card ──
         const compCard = $('comparisonCard');
         if (showNaive && currentRoadmap.length > 0 && naiveCumulative.length > 0) {
             compCard.style.display = 'block';
             const milestones = $('compMilestones');
             const verdict = $('compVerdict');
 
-            // Pick milestone steps: 3, 5, 10, and max
             const totalSteps = Math.min(algoCumulative.length, naiveCumulative.length);
             const checkpoints = [3, 5, 10, totalSteps].filter(n => n <= totalSteps);
-            // Remove duplicates
             const uniqueCP = [...new Set(checkpoints)];
 
             let milestonesHtml = '';
@@ -1294,7 +1335,6 @@
             let totalAlgo = algoCumulative[algoCumulative.length - 1] || 0;
             let totalNaive = naiveCumulative[naiveCumulative.length - 1]?.cum || 0;
 
-            // Find the step where algo has max advantage
             for (let i = 0; i < Math.min(algoCumulative.length, naiveCumulative.length); i++) {
                 const d = algoCumulative[i] - (naiveCumulative[i]?.cum || 0);
                 if (d > maxDelta) { maxDelta = d; maxDeltaStep = i + 1; }
@@ -1320,7 +1360,6 @@
             }
             milestones.innerHTML = milestonesHtml;
 
-            // Verdict
             const baselineN = dictOrdiniReali.size;
             const finalDelta = totalAlgo - totalNaive;
             if (finalDelta > 0) {
@@ -1353,10 +1392,11 @@
     }
 
     // ═══════════════════════════════════════════
-    //  DRILL-DOWN (unchanged logic)
+    //  DRILL-DOWN & EXPORT
     // ═══════════════════════════════════════════
     function triggerDrillDown(type, arg1, arg2) {
         const targetOrders = new Set();
+        const targetAnomalies = new Set();
         currentModalContext = { type, arg1, arg2 };
         let customModalInfo = null;
 
@@ -1385,15 +1425,25 @@
             $('modalTitle').textContent = `Score Step ${stepIndex + 1}`;
             customModalInfo = `Formula: ${stepData.breakdown} = ${stepData.score.toLocaleString()}`;
             stepData.stats.ordersTotal.forEach(ord => targetOrders.add(ord));
+        } else if (type === 'anomalies') {
+            $('modalTitle').textContent = "Dettaglio: Articoli con distinte miste";
+            customModalInfo = "Articoli che nello stesso ordine presentano righi producibili a BRA e righi a COR. L'algoritmo richiede che siano tutti BRA e li ha classificati come bloccanti.";
+            anomalieMiste.forEach(a => targetAnomalies.add(a.ordine + "||" + a.articoloDesc));
         }
 
-        if (targetOrders.size === 0) return;
+        if (targetOrders.size === 0 && targetAnomalies.size === 0) return;
         const resultRows = [];
-        // Use filteredRows (respects both Excel hidden rows and client-side filters)
         const sourceRows = (filteredRows && filteredRows.length > 1) ? filteredRows : originalRows;
+        
         for (let i = 1; i < sourceRows.length; i++) {
             const ord = String(sourceRows[i][colOrderIdx] || "").trim();
-            if (targetOrders.has(ord)) resultRows.push(sourceRows[i]);
+            const art = String(sourceRows[i][colArticleIdx] || "").trim();
+            
+            if (type === 'anomalies') {
+                if (targetAnomalies.has(ord + "||" + art)) resultRows.push(sourceRows[i]);
+            } else {
+                if (targetOrders.has(ord)) resultRows.push(sourceRows[i]);
+            }
         }
         currentExportData = [headers, ...resultRows];
         renderModalData(headers, resultRows, customModalInfo);
@@ -1438,6 +1488,7 @@
         else if (currentModalContext.type === 'item') fn = `${currentModalContext.arg1.replace(/[%/\\]/g,"").substring(0,10)}_${ts}.xlsx`;
         else if (currentModalContext.type === 'sim_priority') fn = `Step${currentModalContext.arg1+1}_P${currentModalContext.arg2}_${ts}.xlsx`;
         else if (currentModalContext.type === 'score') fn = `Step${currentModalContext.arg1+1}_Score_${ts}.xlsx`;
+        else if (currentModalContext.type === 'anomalies') fn = `AnomalieDistinteMiste_${ts}.xlsx`;
         XLSX.writeFile(wb, fn);
     }
 
