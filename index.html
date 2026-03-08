@@ -403,6 +403,48 @@
         .stat-chip .stat-label { color: var(--text-secondary); }
         .stat-chip.stat-excluded { border-color: var(--red-border); background: var(--red-bg); }
         .stat-chip.stat-excluded .stat-num { color: var(--red); }
+
+        /* COMPARISON CARD */
+        .comparison-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+            margin-bottom: 24px; overflow: hidden;
+        }
+        .comp-header {
+            padding: 16px 22px; display: flex; align-items: flex-start; gap: 12px;
+            border-bottom: 1px solid var(--border); background: var(--surface-alt);
+        }
+        .comp-header svg { flex-shrink: 0; color: var(--accent); margin-top: 2px; }
+        .comp-header h3 { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+        .comp-header p { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+        .comp-body { padding: 20px 22px; }
+        .comp-milestones { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 18px; }
+        .comp-milestone {
+            border-radius: 10px; padding: 16px 18px; text-align: center;
+            border: 1px solid var(--border);
+        }
+        .comp-milestone .cm-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 10px; }
+        .comp-milestone .cm-row { display: flex; justify-content: center; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+        .comp-milestone .cm-algo { font-family: 'JetBrains Mono', monospace; font-size: 1.6rem; font-weight: 700; color: var(--green); }
+        .comp-milestone .cm-vs { font-size: 0.75rem; color: var(--text-muted); }
+        .comp-milestone .cm-naive { font-family: 'JetBrains Mono', monospace; font-size: 1.6rem; font-weight: 700; color: var(--text-muted); }
+        .comp-milestone .cm-delta {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+            font-weight: 700; padding: 2px 10px; border-radius: 20px; display: inline-block; margin-top: 6px;
+        }
+        .cm-delta.positive { color: var(--green); background: var(--green-bg); border: 1px solid var(--green-border); }
+        .cm-delta.negative { color: var(--red); background: var(--red-bg); border: 1px solid var(--red-border); }
+        .cm-delta.neutral { color: var(--text-muted); background: var(--surface-alt); border: 1px solid var(--border); }
+        .comp-verdict {
+            background: var(--green-bg); border: 1px solid var(--green-border);
+            border-radius: 10px; padding: 16px 22px;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .comp-verdict.is-tie { background: var(--surface-alt); border-color: var(--border); }
+        .comp-verdict .cv-icon { font-size: 1.8rem; flex-shrink: 0; }
+        .comp-verdict .cv-text { font-size: 0.88rem; color: var(--text); line-height: 1.5; }
+        .comp-verdict .cv-text strong { color: var(--green); }
+        .comp-verdict.is-tie .cv-text strong { color: var(--text); }
     </style>
 </head>
 <body>
@@ -437,7 +479,16 @@
                     <label class="radio-label"><input type="radio" name="countMethod" value="ordini" checked> Conta <strong>Ordini</strong></label>
                     <label class="radio-label"><input type="radio" name="countMethod" value="righe"> Conta <strong>Righe</strong> totali</label>
                 </div>
-                <div class="radio-hint">Determina il "peso" per l'algoritmo.</div>
+                <label class="toggle-row" style="margin-top:8px;">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="showNaiveToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <div class="toggle-text">
+                        <strong>Confronto vs Pivot</strong>
+                        <small>Mostra quanto l'algoritmo batte l'ordinamento statico (la "pivot").</small>
+                    </div>
+                </label>
             </div>
         </div>
         <div class="control-section">
@@ -527,6 +578,22 @@
             </div>
         </div>
         <div class="summary-bar" id="summaryBar"></div>
+
+        <!-- NAIVE vs ALGO comparison card -->
+        <div class="comparison-card" id="comparisonCard" style="display:none;">
+            <div class="comp-header">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <div>
+                    <h3>Algoritmo vs Classifica Statica (Pivot)</h3>
+                    <p>La classifica statica ordina gli articoli per "quanti ordini bloccano" senza simulare l'effetto cascata.</p>
+                </div>
+            </div>
+            <div class="comp-body">
+                <div class="comp-milestones" id="compMilestones"></div>
+                <div class="comp-verdict" id="compVerdict"></div>
+            </div>
+        </div>
+
         <div class="table-card">
             <div class="table-header">
                 <h2>Roadmap Insegnamento BRA (Simulazione)</h2>
@@ -791,6 +858,7 @@
 
     $('isRealToggle').addEventListener('change', onParamChange);
     $('prefixInput').addEventListener('input', onParamChange);
+    $('showNaiveToggle').addEventListener('change', onParamChange);
     document.querySelectorAll('input[name="countMethod"]').forEach(r => r.addEventListener('change', onParamChange));
 
     function recalculate() {
@@ -1084,6 +1152,68 @@
             itemsToProcess.delete(bestItem);
         }
 
+        // ── PHASE 2b: NAIVE (static) simulation for comparison ──
+        let naiveCumulative = [];
+        const showNaive = $('showNaiveToggle').checked;
+
+        if (showNaive && currentRoadmap.length > 0) {
+            // Naive approach: sort articles by how many orders they block (static count, no simulation)
+            let naiveStaticCounts = new Map();
+            // Rebuild activeOrders fresh for naive sim
+            let naiveActive = new Map();
+            dictOrdini.forEach((orderItems, ordine) => {
+                let isDQ = false; let miss = []; let hasT = false; let hasEB = false;
+                orderItems.forEach((info, ad) => {
+                    const mp = ad.includes(prefixInput);
+                    if (!mp) { if (isReal) isDQ = true; }
+                    else {
+                        hasT = true;
+                        if (!info.isBra) {
+                            if (excludedArticles.has(ad)) hasEB = true;
+                            else miss.push({ desc: ad, weight: (countMethod === 'righe') ? info.count : 1 });
+                        }
+                    }
+                });
+                if (isDQ || !hasT || hasEB) return;
+                if (miss.length > 0) naiveActive.set(ordine, miss);
+            });
+
+            // Count static blocking
+            naiveActive.forEach((miss) => {
+                miss.forEach(m => {
+                    naiveStaticCounts.set(m.desc, (naiveStaticCounts.get(m.desc) || 0) + 1);
+                });
+            });
+
+            // Sort by static count descending
+            let naiveOrder = [...naiveStaticCounts.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .map(e => e[0]);
+
+            // Simulate naive sequence
+            let naiveCum = 0;
+            for (const art of naiveOrder) {
+                let unlocked = 0;
+                let toRemove = [];
+                naiveActive.forEach((miss, ord) => {
+                    let filtered = miss.filter(m => m.desc !== art);
+                    if (filtered.length === 0 && miss.length > 0) {
+                        unlocked++;
+                        toRemove.push(ord);
+                    } else {
+                        naiveActive.set(ord, filtered);
+                    }
+                });
+                toRemove.forEach(o => naiveActive.delete(o));
+                naiveCum += unlocked;
+                naiveCumulative.push({ desc: art, unlocked, cum: naiveCum });
+            }
+        }
+
+        // Also compute algo cumulative for comparison
+        let algoCumulative = [];
+        { let c = 0; currentRoadmap.forEach(item => { c += item.stats.p1; algoCumulative.push(c); }); }
+
         // PHASE 3: Render
         let exclChipHtml = '';
         if (excludedArticles.size > 0) {
@@ -1143,6 +1273,78 @@
                 fragment.appendChild(tr);
             });
             tbody.appendChild(fragment);
+        }
+
+        // ── Render comparison card ──
+        const compCard = $('comparisonCard');
+        if (showNaive && currentRoadmap.length > 0 && naiveCumulative.length > 0) {
+            compCard.style.display = 'block';
+            const milestones = $('compMilestones');
+            const verdict = $('compVerdict');
+
+            // Pick milestone steps: 3, 5, 10, and max
+            const totalSteps = Math.min(algoCumulative.length, naiveCumulative.length);
+            const checkpoints = [3, 5, 10, totalSteps].filter(n => n <= totalSteps);
+            // Remove duplicates
+            const uniqueCP = [...new Set(checkpoints)];
+
+            let milestonesHtml = '';
+            let maxDelta = 0;
+            let maxDeltaStep = 0;
+            let totalAlgo = algoCumulative[algoCumulative.length - 1] || 0;
+            let totalNaive = naiveCumulative[naiveCumulative.length - 1]?.cum || 0;
+
+            // Find the step where algo has max advantage
+            for (let i = 0; i < Math.min(algoCumulative.length, naiveCumulative.length); i++) {
+                const d = algoCumulative[i] - (naiveCumulative[i]?.cum || 0);
+                if (d > maxDelta) { maxDelta = d; maxDeltaStep = i + 1; }
+            }
+
+            for (const cp of uniqueCP) {
+                const algoVal = algoCumulative[cp - 1] || 0;
+                const naiveVal = naiveCumulative[cp - 1]?.cum || 0;
+                const delta = algoVal - naiveVal;
+                const deltaClass = delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral';
+                const deltaSign = delta > 0 ? '+' : '';
+                const label = cp === totalSteps ? `Dopo tutti i ${cp} step` : `Dopo ${cp} step`;
+
+                milestonesHtml += `<div class="comp-milestone">
+                    <div class="cm-label">${label}</div>
+                    <div class="cm-row">
+                        <span class="cm-algo">${algoVal}</span>
+                        <span class="cm-vs">vs</span>
+                        <span class="cm-naive">${naiveVal}</span>
+                    </div>
+                    <div class="cm-delta ${deltaClass}">${deltaSign}${delta} ordini</div>
+                </div>`;
+            }
+            milestones.innerHTML = milestonesHtml;
+
+            // Verdict
+            const baselineN = dictOrdiniReali.size;
+            const finalDelta = totalAlgo - totalNaive;
+            if (finalDelta > 0) {
+                verdict.className = 'comp-verdict';
+                verdict.innerHTML = `<span class="cv-icon">🏆</span><div class="cv-text">
+                    L'algoritmo sblocca <strong>${finalDelta} ordini in più</strong> rispetto alla classifica statica.
+                    Il vantaggio massimo è di <strong>${maxDelta} ordini allo step ${maxDeltaStep}</strong>.
+                    Su un totale di ${baselineN + totalAlgo} ordini producibili a BRA, l'algoritmo arriva prima e meglio.
+                </div>`;
+            } else if (finalDelta === 0) {
+                verdict.className = 'comp-verdict is-tie';
+                verdict.innerHTML = `<span class="cv-icon">🤝</span><div class="cv-text">
+                    A fine percorso i due metodi sbloccano lo stesso numero di ordini (<strong>${totalAlgo}</strong>).
+                    ${maxDelta > 0 ? `Però l'algoritmo ci arriva <strong>${maxDelta} ordini prima allo step ${maxDeltaStep}</strong> — tempo guadagnato per BRA.` : 'I due percorsi sono equivalenti su questo dataset.'}
+                </div>`;
+            } else {
+                verdict.className = 'comp-verdict';
+                verdict.innerHTML = `<span class="cv-icon">📊</span><div class="cv-text">
+                    Su questo dataset la classifica statica sblocca ${-finalDelta} ordini in più a fine percorso.
+                    Questo può accadere quando la distribuzione dei blocchi è molto uniforme.
+                </div>`;
+            }
+        } else {
+            compCard.style.display = 'none';
         }
 
         showLoader(false);
