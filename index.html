@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report RND Ordini - Roadmap Olistica</title>
+    <title>Report RND Ordini - Roadmap Olistica v2</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -32,560 +32,309 @@
             --purple-bg: #faf5ff;
             --red: #dc2626;
             --red-bg: #fef2f2;
+            --red-border: #fecaca;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
             --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
             --radius: 10px;
             --radius-lg: 14px;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'DM Sans', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.5;
-            min-height: 100vh;
+            background: var(--bg); color: var(--text);
+            line-height: 1.5; min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
-
         .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
 
-        /* HEADER */
         header {
-            margin-bottom: 28px;
-            padding-bottom: 20px;
+            margin-bottom: 28px; padding-bottom: 20px;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: baseline;
-            gap: 16px;
-            flex-wrap: wrap;
+            display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
         }
-        header h1 {
-            font-size: 1.65rem;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            color: var(--text);
-        }
+        header h1 { font-size: 1.65rem; font-weight: 700; letter-spacing: -0.03em; }
         header .badge {
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            background: var(--accent-light);
-            color: var(--accent);
-            border: 1px solid var(--accent-border);
-            padding: 3px 10px;
-            border-radius: 20px;
+            font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.06em; background: var(--accent-light);
+            color: var(--accent); border: 1px solid var(--accent-border);
+            padding: 3px 10px; border-radius: 20px;
         }
-        header p {
-            width: 100%;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-        }
+        header p { width: 100%; font-size: 0.82rem; color: var(--text-muted); }
 
-        /* CONTROLS PANEL */
         .controls-panel {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            margin-bottom: 28px;
-            display: grid;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+            margin-bottom: 28px; display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             overflow: hidden;
         }
-        @media (max-width: 900px) {
-            .controls-panel { grid-template-columns: 1fr; }
-        }
-        .control-section {
-            padding: 22px 24px;
-            display: flex;
-            flex-direction: column;
-        }
-        .control-section + .control-section {
-            border-left: 1px solid var(--border);
-        }
-        @media (max-width: 900px) {
-            .control-section + .control-section {
-                border-left: none;
-                border-top: 1px solid var(--border);
-            }
-        }
+        @media (max-width: 900px) { .controls-panel { grid-template-columns: 1fr; } }
+        .control-section { padding: 22px 24px; display: flex; flex-direction: column; }
+        .control-section + .control-section { border-left: 1px solid var(--border); }
+        @media (max-width: 900px) { .control-section + .control-section { border-left: none; border-top: 1px solid var(--border); } }
         .control-label {
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: var(--text-muted);
-            margin-bottom: 14px;
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 14px;
         }
         .control-body { flex: 1; display: flex; flex-direction: column; gap: 10px; }
 
-        /* Toggle switch */
-        .toggle-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            cursor: pointer;
-        }
-        .toggle-switch {
-            position: relative;
-            width: 40px;
-            height: 22px;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
+        .toggle-row { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+        .toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; margin-top: 2px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .toggle-slider {
-            position: absolute;
-            inset: 0;
-            background: #ccd0d8;
-            border-radius: 22px;
-            transition: background 0.2s;
-            cursor: pointer;
+            position: absolute; inset: 0; background: #ccd0d8;
+            border-radius: 22px; transition: background 0.2s; cursor: pointer;
         }
         .toggle-slider::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: white;
-            top: 3px;
-            left: 3px;
-            transition: transform 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            content: ''; position: absolute; width: 16px; height: 16px;
+            border-radius: 50%; background: white; top: 3px; left: 3px;
+            transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
         }
-        .toggle-switch input:checked + .toggle-slider {
-            background: var(--accent);
-        }
-        .toggle-switch input:checked + .toggle-slider::after {
-            transform: translateX(18px);
-        }
+        .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+        .toggle-switch input:checked + .toggle-slider::after { transform: translateX(18px); }
         .toggle-text { font-size: 0.85rem; color: var(--text); line-height: 1.4; }
         .toggle-text strong { font-weight: 600; }
         .toggle-text small { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
 
-        /* Prefix input */
         .prefix-input {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.82rem;
-            padding: 7px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            background: var(--surface-alt);
-            margin-top: 4px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+            padding: 7px 12px; border: 1px solid var(--border); border-radius: 6px;
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--surface-alt); margin-top: 4px;
         }
-        .prefix-input:focus {
-            border-color: var(--border-focus);
-            box-shadow: 0 0 0 3px rgba(74,124,255,0.12);
-        }
+        .prefix-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(74,124,255,0.12); }
 
-        /* Radio buttons */
         .radio-group { display: flex; flex-direction: column; gap: 8px; }
         .radio-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.15s;
-            font-size: 0.85rem;
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; border-radius: 8px; cursor: pointer;
+            transition: background 0.15s; font-size: 0.85rem;
         }
         .radio-label:hover { background: var(--surface-alt); }
-        .radio-label input[type="radio"] {
-            accent-color: var(--accent);
-            width: 16px;
-            height: 16px;
-        }
+        .radio-label input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; }
         .radio-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; padding-left: 4px; }
 
-        /* Upload zone */
         .upload-zone {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 2px dashed var(--border);
-            border-radius: var(--radius);
-            cursor: pointer;
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; border: 2px dashed var(--border);
+            border-radius: var(--radius); cursor: pointer;
             transition: border-color 0.2s, background 0.2s;
-            min-height: 110px;
-            position: relative;
+            min-height: 110px; position: relative;
         }
-        .upload-zone:hover, .upload-zone.drag-over {
-            border-color: var(--accent);
-            background: var(--accent-light);
-        }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--accent-light); }
         .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
         .upload-icon { color: var(--text-muted); margin-bottom: 8px; transition: color 0.2s; }
         .upload-zone:hover .upload-icon { color: var(--accent); }
         .upload-text { font-size: 0.82rem; color: var(--text-secondary); text-align: center; }
         .upload-text strong { color: var(--accent); }
-        .file-loaded {
-            font-size: 0.78rem;
-            color: var(--green);
-            font-weight: 600;
-            margin-top: 6px;
-            display: none;
-            align-items: center;
-            gap: 4px;
-        }
+        .file-loaded { font-size: 0.78rem; color: var(--green); font-weight: 600; margin-top: 6px; display: none; align-items: center; gap: 4px; }
         .file-loaded.visible { display: flex; }
 
-        /* Loader */
-        .loader-wrap {
-            display: none;
-            justify-content: center;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 28px;
-            padding: 20px;
-        }
+        .loader-wrap { display: none; justify-content: center; align-items: center; gap: 14px; margin-bottom: 28px; padding: 20px; }
         .loader-wrap.active { display: flex; }
-        .spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
+        .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .loader-text { font-size: 0.88rem; color: var(--accent); font-weight: 500; }
 
-        /* RECALCULATE BAR */
         .recalc-bar {
-            display: none;
-            margin-bottom: 24px;
-            background: var(--amber-bg);
-            border: 1px solid var(--amber-border);
-            border-radius: var(--radius);
-            padding: 14px 20px;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
+            display: none; margin-bottom: 24px; background: var(--amber-bg);
+            border: 1px solid var(--amber-border); border-radius: var(--radius);
+            padding: 14px 20px; align-items: center;
+            justify-content: space-between; gap: 16px; flex-wrap: wrap;
         }
         .recalc-bar.visible { display: flex; }
-        .recalc-bar .recalc-text {
-            font-size: 0.84rem;
-            color: #92400e;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .recalc-bar .recalc-text { font-size: 0.84rem; color: #92400e; display: flex; align-items: center; gap: 8px; }
         .recalc-bar .recalc-text svg { flex-shrink: 0; }
         .btn-recalc {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 22px;
-            border-radius: 8px;
-            font-size: 0.84rem;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            font-family: inherit;
-            background: var(--accent);
-            color: white;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 22px; border-radius: 8px; font-size: 0.84rem;
+            font-weight: 700; border: none; cursor: pointer; font-family: inherit;
+            background: var(--accent); color: white;
             transition: background 0.15s, transform 0.1s;
             box-shadow: 0 1px 3px rgba(74,124,255,0.3);
         }
         .btn-recalc:hover { background: var(--accent-hover); }
         .btn-recalc:active { transform: scale(0.97); }
 
-        /* DEBUG PANEL */
-        .debug-panel {
-            display: none;
-            margin-bottom: 24px;
-            background: #1a1d23;
-            border-radius: var(--radius);
-            overflow: hidden;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.72rem;
+        /* EXCLUSION PANEL */
+        .exclusion-panel {
+            display: none; margin-bottom: 24px;
+            background: var(--red-bg); border: 1px solid var(--red-border);
+            border-radius: var(--radius-lg); overflow: hidden;
         }
-        .debug-panel.visible { display: block; }
-        .debug-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 14px;
-            background: #2a2d33;
-            color: #9aa0ab;
+        .exclusion-panel.visible { display: block; }
+        .exclusion-header {
+            padding: 14px 20px; display: flex; align-items: center;
+            justify-content: space-between; gap: 12px;
+            border-bottom: 1px solid var(--red-border);
         }
-        .debug-header span { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-        .debug-toggle-btn {
-            background: none;
-            border: none;
-            color: #9aa0ab;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 4px;
+        .exclusion-header-left { display: flex; align-items: center; gap: 10px; }
+        .exclusion-header-left svg { flex-shrink: 0; color: var(--red); }
+        .exclusion-header h3 { font-size: 0.88rem; font-weight: 700; color: var(--red); }
+        .exclusion-header p { font-size: 0.75rem; color: #991b1b; margin-top: 1px; }
+        .exclusion-count {
+            font-family: 'JetBrains Mono', monospace; font-size: 1.1rem;
+            font-weight: 700; color: var(--red); background: white;
+            border: 1px solid var(--red-border); border-radius: 8px;
+            padding: 4px 14px; min-width: 36px; text-align: center;
+        }
+        .exclusion-body { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .excl-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: white; border: 1px solid var(--red-border);
+            border-radius: 6px; padding: 5px 10px 5px 12px;
+            font-size: 0.78rem; font-family: 'JetBrains Mono', monospace;
+            color: var(--red); font-weight: 600;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .excl-chip:hover { background: var(--red-bg); border-color: var(--red); }
+        .excl-chip button {
+            background: none; border: none; cursor: pointer;
+            color: var(--red); padding: 0; display: flex;
+            opacity: 0.5; transition: opacity 0.15s;
+        }
+        .excl-chip button:hover { opacity: 1; }
+        .excl-actions { padding: 10px 16px; border-top: 1px solid var(--red-border); display: flex; gap: 10px; align-items: center; }
+        .excl-actions .btn-sm {
+            font-size: 0.78rem; font-weight: 600; padding: 6px 14px;
+            border-radius: 6px; border: none; cursor: pointer; font-family: inherit;
             transition: background 0.15s;
         }
-        .debug-toggle-btn:hover { background: #3a3d43; }
-        .debug-log {
-            padding: 10px 14px;
-            max-height: 200px;
-            overflow-y: auto;
-            color: #c8cdd5;
-            line-height: 1.7;
+        .btn-clear-all { background: var(--red); color: white; }
+        .btn-clear-all:hover { background: #b91c1c; }
+        .btn-recalc-excl { background: var(--accent); color: white; }
+        .btn-recalc-excl:hover { background: var(--accent-hover); }
+        .excl-impact {
+            font-size: 0.78rem; color: #991b1b; margin-left: auto;
+            font-style: italic;
         }
-        .debug-log .log-ok { color: #4ade80; }
-        .debug-log .log-warn { color: #fbbf24; }
-        .debug-log .log-err { color: #f87171; }
-        .debug-log .log-info { color: #60a5fa; }
 
-        /* RESULTS */
+        .debug-panel { display: none; margin-bottom: 24px; background: #1a1d23; border-radius: var(--radius); overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
+        .debug-panel.visible { display: block; }
+        .debug-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #2a2d33; color: #9aa0ab; }
+        .debug-header span { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .debug-toggle-btn { background: none; border: none; color: #9aa0ab; cursor: pointer; font-family: inherit; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; transition: background 0.15s; }
+        .debug-toggle-btn:hover { background: #3a3d43; }
+        .debug-log { padding: 10px 14px; max-height: 200px; overflow-y: auto; color: #c8cdd5; line-height: 1.7; }
+        .debug-log .log-ok { color: #4ade80; } .debug-log .log-warn { color: #fbbf24; }
+        .debug-log .log-err { color: #f87171; } .debug-log .log-info { color: #60a5fa; }
+
         #resultsArea { display: none; }
         #resultsArea.visible { display: block; }
 
-        /* Baseline card */
         .baseline-card {
-            background: var(--accent-light);
-            border: 1px solid var(--accent-border);
-            border-radius: var(--radius-lg);
-            padding: 22px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            gap: 20px;
-            flex-wrap: wrap;
+            background: var(--accent-light); border: 1px solid var(--accent-border);
+            border-radius: var(--radius-lg); padding: 22px 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px; gap: 20px; flex-wrap: wrap;
         }
-        .baseline-label h2 { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+        .baseline-label h2 { font-size: 1.1rem; font-weight: 700; }
         .baseline-label p { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
         .baseline-value { display: flex; flex-direction: column; align-items: center; }
         .baseline-number {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 2.4rem;
-            font-weight: 700;
-            color: var(--accent);
-            cursor: pointer;
-            transition: color 0.2s, transform 0.15s;
-            line-height: 1;
+            font-family: 'JetBrains Mono', monospace; font-size: 2.4rem;
+            font-weight: 700; color: var(--accent); cursor: pointer;
+            transition: color 0.2s, transform 0.15s; line-height: 1;
         }
         .baseline-number:hover { color: var(--accent-hover); transform: scale(1.05); }
-        .baseline-hint {
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--accent);
-            font-weight: 600;
-            margin-top: 6px;
-        }
+        .baseline-hint { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 600; margin-top: 6px; }
 
-        /* Priority table */
         .table-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-            margin-bottom: 24px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+            overflow: hidden; margin-bottom: 24px;
         }
-        .table-header {
-            padding: 18px 24px;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface);
-        }
+        .table-header { padding: 18px 24px; border-bottom: 1px solid var(--border); }
         .table-header h2 { font-size: 1rem; font-weight: 700; }
         .table-header p { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
         thead th {
-            padding: 10px 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-muted);
-            background: var(--surface-alt);
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
-            text-align: center;
+            padding: 10px 20px; font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
+            background: var(--surface-alt); border-bottom: 1px solid var(--border);
+            white-space: nowrap; text-align: center;
         }
         thead th:nth-child(2), thead th:nth-child(3) { text-align: left; }
         thead th.col-total { background: #eef0f4; }
         thead th.col-score { background: var(--purple-bg); color: var(--purple); }
-        
+        thead th.col-action { background: var(--red-bg); color: var(--red); width: 70px; }
         tbody td {
-            padding: 10px 20px;
-            text-align: center;
-            border-bottom: 1px solid #f0f1f3;
-            color: var(--text-secondary);
+            padding: 10px 20px; text-align: center;
+            border-bottom: 1px solid #f0f1f3; color: var(--text-secondary);
         }
         tbody td:nth-child(1) { font-weight: 700; color: var(--accent); }
-        tbody td:nth-child(2) {
-            text-align: left;
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
-            font-size: 0.82rem;
-            color: var(--text);
-        }
-        tbody td:nth-child(3) {
-            text-align: left;
-            font-weight: 500;
-            font-size: 0.82rem;
-            color: var(--text);
-        }
-        tbody td.col-total {
-            background: var(--surface-alt);
-            font-weight: 700;
-            color: var(--text);
-        }
-        tbody td.col-score {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--purple);
-            font-weight: 600;
-            background: var(--purple-bg);
-        }
+        tbody td:nth-child(2) { text-align: left; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.82rem; color: var(--text); }
+        tbody td:nth-child(3) { text-align: left; font-weight: 500; font-size: 0.82rem; color: var(--text); }
+        tbody td.col-total { background: var(--surface-alt); font-weight: 700; color: var(--text); }
+        tbody td.col-score { font-family: 'JetBrains Mono', monospace; color: var(--purple); font-weight: 600; background: var(--purple-bg); }
         tbody tr:hover { background: #fafbfc; }
-        
-        .clickable {
-            color: var(--accent);
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.15s, color 0.15s;
-            border-radius: 4px;
-            text-decoration: underline;
-            text-underline-offset: 2px;
-        }
+        .clickable { color: var(--accent); font-weight: 700; cursor: pointer; transition: background 0.15s, color 0.15s; border-radius: 4px; text-decoration: underline; text-underline-offset: 2px; }
         .clickable:hover { background: var(--accent-light); color: var(--accent-hover); }
-        
-        .clickable-green {
-            color: var(--green);
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: underline;
-            text-underline-offset: 2px;
-        }
+        .clickable-green { color: var(--green); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .clickable-green:hover { color: var(--green-hover); background: #dcfce7; border-radius: 4px; }
-        
-        .clickable-purple {
-            color: var(--purple);
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: underline;
-            text-underline-offset: 2px;
-        }
+        .clickable-purple { color: var(--purple); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .clickable-purple:hover { color: #7e22ce; background: #f3e8ff; border-radius: 4px; }
-
         .zero-val { color: var(--text-muted); font-weight: 400; }
-        .success-val { color: var(--green); font-weight: 700; background: var(--green-bg); border-radius: 4px; padding: 2px 6px;}
+        .success-val { color: var(--green); font-weight: 700; background: var(--green-bg); border-radius: 4px; padding: 2px 6px; }
 
-        /* MODAL */
+        .btn-exclude {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px; border-radius: 5px; font-size: 0.72rem;
+            font-weight: 600; border: 1px solid var(--red-border);
+            cursor: pointer; font-family: inherit;
+            background: white; color: var(--red);
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-exclude:hover { background: var(--red-bg); border-color: var(--red); }
+        .btn-exclude svg { width: 12px; height: 12px; }
+
         .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            background: rgba(15,17,22,0.55);
-            backdrop-filter: blur(4px);
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            display: none; position: fixed; inset: 0; z-index: 100;
+            background: rgba(15,17,22,0.55); backdrop-filter: blur(4px);
+            justify-content: center; align-items: center; padding: 20px;
         }
         .modal-overlay.open { display: flex; }
         .modal-box {
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            width: 100%;
-            max-width: 1280px;
-            max-height: 88vh;
-            display: flex;
-            flex-direction: column;
+            background: var(--surface); border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg); width: 100%; max-width: 1280px;
+            max-height: 88vh; display: flex; flex-direction: column;
             animation: modalIn 0.2s ease-out;
         }
-        @keyframes modalIn {
-            from { opacity: 0; transform: translateY(12px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .modal-head {
-            padding: 18px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
+        @keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .modal-head { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .modal-head h3 { font-size: 1rem; font-weight: 700; }
         .modal-head p { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-        .modal-close {
-            width: 34px; height: 34px;
-            border: none; background: var(--surface-alt);
-            border-radius: 8px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--text-secondary);
-            transition: background 0.15s, color 0.15s;
-            flex-shrink: 0;
-        }
+        .modal-close { width: 34px; height: 34px; border: none; background: var(--surface-alt); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: background 0.15s; flex-shrink: 0; }
         .modal-close:hover { background: #eee; color: var(--text); }
         .modal-body { flex: 1; overflow: auto; padding: 16px 24px; }
         .modal-body table { font-size: 0.78rem; }
-        .modal-body thead th {
-            background: #fef9c3; color: #713f12;
-            position: sticky; top: 0; z-index: 2;
-        }
+        .modal-body thead th { background: #fef9c3; color: #713f12; position: sticky; top: 0; z-index: 2; }
         .modal-body tbody td { padding: 6px 12px; white-space: nowrap; }
-        .modal-foot {
-            padding: 14px 24px;
-            border-top: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-            flex-shrink: 0; gap: 12px;
-        }
-        .btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 9px 18px; border-radius: 8px;
-            font-size: 0.84rem; font-weight: 600;
-            border: none; cursor: pointer;
-            transition: background 0.15s, transform 0.1s;
-            font-family: inherit;
-        }
+        .modal-foot { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 12px; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 8px; font-size: 0.84rem; font-weight: 600; border: none; cursor: pointer; transition: background 0.15s, transform 0.1s; font-family: inherit; }
         .btn:active { transform: scale(0.97); }
         .btn-green { background: var(--green); color: white; }
         .btn-green:hover { background: var(--green-hover); }
         .btn-gray { background: #e5e7eb; color: var(--text); }
         .btn-gray:hover { background: #d1d5db; }
-        .truncation-notice {
-            font-size: 0.78rem; color: var(--amber); font-weight: 500;
-            text-align: center; padding: 10px;
-            background: var(--amber-bg); border: 1px solid var(--amber-border);
-            border-radius: 6px; margin-top: 8px;
-        }
+        .truncation-notice { font-size: 0.78rem; color: var(--amber); font-weight: 500; text-align: center; padding: 10px; background: var(--amber-bg); border: 1px solid var(--amber-border); border-radius: 6px; margin-top: 8px; }
 
-        /* Summary bar */
         .summary-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-        .stat-chip {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 8px; padding: 10px 18px;
-            display: flex; align-items: center; gap: 10px; font-size: 0.82rem;
-        }
-        .stat-chip .stat-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 700; font-size: 1.1rem; color: var(--text);
-        }
+        .stat-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 18px; display: flex; align-items: center; gap: 10px; font-size: 0.82rem; }
+        .stat-chip .stat-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.1rem; color: var(--text); }
         .stat-chip .stat-label { color: var(--text-secondary); }
+        .stat-chip.stat-excluded { border-color: var(--red-border); background: var(--red-bg); }
+        .stat-chip.stat-excluded .stat-num { color: var(--red); }
     </style>
 </head>
 <body>
-
 <div class="container">
     <header>
         <h1>Analisi Report RND</h1>
-        <span class="badge">Client-Side</span>
-        <p>Roadmap Olistica (Effetto Domino): calcola in sequenza l'impatto di sblocco di ogni articolo.</p>
+        <span class="badge">Client-Side v2</span>
+        <p>Roadmap Olistica con Esclusione Articoli: escludi articoli non industrializzabili e ricalcola l'impatto.</p>
     </header>
 
     <div class="controls-panel">
@@ -599,30 +348,22 @@
                     </div>
                     <div class="toggle-text">
                         <strong>Escludi Ordini Misti</strong>
-                        <small>Se attivo, scarta interamente gli ordini che contengono articoli non appartenenti alla famiglia indicata.</small>
+                        <small>Se attivo, scarta interamente gli ordini che contengono articoli non appartenenti alla famiglia.</small>
                     </div>
                 </label>
                 <input type="text" id="prefixInput" value="%TL1X" class="prefix-input" placeholder="Prefisso Famiglia">
             </div>
         </div>
-
         <div class="control-section">
             <div class="control-label">2 &middot; Unità di misura</div>
             <div class="control-body">
                 <div class="radio-group">
-                    <label class="radio-label">
-                        <input type="radio" name="countMethod" value="ordini" checked>
-                        Conta <strong>Ordini</strong>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="countMethod" value="righe">
-                        Conta <strong>Righe</strong> totali
-                    </label>
+                    <label class="radio-label"><input type="radio" name="countMethod" value="ordini" checked> Conta <strong>Ordini</strong></label>
+                    <label class="radio-label"><input type="radio" name="countMethod" value="righe"> Conta <strong>Righe</strong> totali</label>
                 </div>
-                <div class="radio-hint">Determina il "peso" per l'algoritmo di simulazione.</div>
+                <div class="radio-hint">Determina il "peso" per l'algoritmo.</div>
             </div>
         </div>
-
         <div class="control-section">
             <div class="control-label">3 &middot; Carica file</div>
             <div class="control-body">
@@ -630,12 +371,29 @@
                     <input id="fileUpload" type="file" accept=".xlsx,.xls,.csv" />
                     <svg class="upload-icon" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                     <div class="upload-text"><strong>Carica file</strong> &nbsp;.xlsx, .xls, .csv</div>
-                    <div class="file-loaded" id="fileLoadedMsg">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        <span id="fileLoadedName"></span>
-                    </div>
+                    <div class="file-loaded" id="fileLoadedMsg"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span id="fileLoadedName"></span></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- EXCLUSION PANEL -->
+    <div class="exclusion-panel" id="exclusionPanel">
+        <div class="exclusion-header">
+            <div class="exclusion-header-left">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                <div>
+                    <h3>Articoli Esclusi (Non Industrializzabili a BRA)</h3>
+                    <p>Questi articoli sono trattati come permanentemente non-BRA. Gli ordini che li contengono non potranno mai essere sbloccati.</p>
+                </div>
+            </div>
+            <span class="exclusion-count" id="exclCount">0</span>
+        </div>
+        <div class="exclusion-body" id="exclChips"></div>
+        <div class="excl-actions">
+            <button class="btn-sm btn-clear-all" onclick="clearAllExclusions()">Rimuovi Tutti</button>
+            <button class="btn-sm btn-recalc-excl" onclick="recalculate()">Ricalcola Roadmap</button>
+            <span class="excl-impact" id="exclImpact"></span>
         </div>
     </div>
 
@@ -651,17 +409,11 @@
     </div>
 
     <div class="debug-panel" id="debugPanel">
-        <div class="debug-header">
-            <span>Debug Log</span>
-            <button class="debug-toggle-btn" onclick="clearDebug()">Pulisci</button>
-        </div>
+        <div class="debug-header"><span>Debug Log</span><button class="debug-toggle-btn" onclick="clearDebug()">Pulisci</button></div>
         <div class="debug-log" id="debugLog"></div>
     </div>
 
-    <div class="loader-wrap" id="loader">
-        <div class="spinner"></div>
-        <span class="loader-text">Simulazione Roadmap in corso…</span>
-    </div>
+    <div class="loader-wrap" id="loader"><div class="spinner"></div><span class="loader-text">Simulazione Roadmap in corso…</span></div>
 
     <div id="resultsArea">
         <div class="baseline-card">
@@ -674,29 +426,20 @@
                 <span class="baseline-hint">Clicca per il dettaglio</span>
             </div>
         </div>
-
         <div class="summary-bar" id="summaryBar"></div>
-
         <div class="table-card">
             <div class="table-header">
                 <h2>Roadmap Insegnamento BRA (Simulazione)</h2>
-                <p>La tabella mostra la sequenza ottimale. Clicca sui numeri per scaricare l'elenco esatto degli ordini bloccati a quello step.</p>
+                <p>Clicca sui numeri per il dettaglio ordini. Usa il pulsante ⊘ per escludere articoli non industrializzabili.</p>
             </div>
             <div class="table-wrap">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Step</th>
-                            <th>Codice Articolo</th>
-                            <th>Descrizione Articolo</th>
-                            <th title="Numero di ordini che diventano pronti al 100% grazie a questo articolo">Sblocca Subito</th>
-                            <th title="Numero di ordini che scendono a 1 solo blocco residuo">Avanza a 1 blocco</th>
-                            <th title="Numero di ordini che scendono a 2 blocchi residui">Avanza a 2 blocchi</th>
-                            <th>Rimangono >3</th>
-                            <th class="col-total">Tot. Impatto</th>
-                            <th class="col-score" title="Punteggio ponderato che determina la posizione in classifica dell'algoritmo">Score Algoritmo</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th>Step</th><th>Codice Articolo</th><th>Descrizione Articolo</th>
+                        <th>Sblocca Subito</th><th>Avanza a 1</th><th>Avanza a 2</th><th>>3</th>
+                        <th class="col-total">Tot.</th><th class="col-score">Score</th>
+                        <th class="col-action">Escludi</th>
+                    </tr></thead>
                     <tbody id="reportTableBody"></tbody>
                 </table>
             </div>
@@ -707,25 +450,12 @@
 <div class="modal-overlay" id="drillDownModal">
     <div class="modal-box">
         <div class="modal-head">
-            <div>
-                <h3 id="modalTitle">Dettaglio Ordini</h3>
-                <p id="modalInfo"></p>
-            </div>
-            <button class="modal-close" onclick="closeModal()" title="Chiudi">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+            <div><h3 id="modalTitle">Dettaglio Ordini</h3><p id="modalInfo"></p></div>
+            <button class="modal-close" onclick="closeModal()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
-        <div class="modal-body">
-            <table>
-                <thead id="modalThead"></thead>
-                <tbody id="modalTbody"></tbody>
-            </table>
-        </div>
+        <div class="modal-body"><table><thead id="modalThead"></thead><tbody id="modalTbody"></tbody></table></div>
         <div class="modal-foot">
-            <button class="btn btn-green" onclick="downloadExcel()">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Scarica Excel (.xlsx)
-            </button>
+            <button class="btn btn-green" onclick="downloadExcel()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Scarica Excel</button>
             <button class="btn btn-gray" onclick="closeModal()">Chiudi</button>
         </div>
     </div>
@@ -736,24 +466,21 @@
     //  STATE
     // ═══════════════════════════════════════════
     let headers = [];
-    let dictOrdiniReali = new Set(); 
+    let dictOrdiniReali = new Set();
     let dictOrdini = new Map();
     let originalRows = [];
-    let currentWorkbook = null; 
-    let currentRoadmap = []; // Salva lo stato step-by-step per il Drill-Down
-
+    let currentWorkbook = null;
+    let currentRoadmap = [];
     let currentExportData = [];
     let currentModalContext = { type: '', arg1: null, arg2: null };
+    let colOrderIdx = -1, colPlantIdx = -1, colArticleIdx = -1, colItemCodeIdx = -1;
+    let dataIsLoaded = false;
 
-    let colOrderIdx = -1;
-    let colPlantIdx = -1;
-    let colArticleIdx = -1;
-    let colItemCodeIdx = -1;
-
-    let dataIsLoaded = false; 
+    // EXCLUSION STATE
+    let excludedArticles = new Set(); // Set of article descriptions permanently excluded
 
     // ═══════════════════════════════════════════
-    //  DEBUG LOGGER
+    //  DEBUG
     // ═══════════════════════════════════════════
     function dbg(msg, type = 'info') {
         const panel = document.getElementById('debugPanel');
@@ -763,7 +490,6 @@
         const cls = type === 'ok' ? 'log-ok' : type === 'warn' ? 'log-warn' : type === 'err' ? 'log-err' : 'log-info';
         log.innerHTML += `<div class="${cls}">[${ts}] ${msg}</div>`;
         log.scrollTop = log.scrollHeight;
-        console.log(`[RND ${type.toUpperCase()}]`, msg);
     }
     function clearDebug() { document.getElementById('debugLog').innerHTML = ''; }
 
@@ -782,25 +508,66 @@
         if (!originalRows || originalRows.length === 0) return;
         $('recalcBar').classList.remove('visible');
         showLoader(true);
-        dbg('Avvio simulazione Olistica...', 'info');
+        dbg('Ricalcolo con ' + excludedArticles.size + ' articoli esclusi...', 'info');
         setTimeout(() => { processData(originalRows); }, 50);
     }
 
     const uploadZone = $('uploadZone');
     ['dragenter', 'dragover'].forEach(evt => uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.add('drag-over'); }));
     ['dragleave', 'drop'].forEach(evt => uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); }));
-    uploadZone.addEventListener('drop', e => {
-        const files = e.dataTransfer.files;
-        if (files.length > 0) { $('fileUpload').files = files; handleFile(files[0]); }
-    });
-    $('fileUpload').addEventListener('change', e => {
-        if (e.target.files[0]) handleFile(e.target.files[0]);
-    });
-
+    uploadZone.addEventListener('drop', e => { const files = e.dataTransfer.files; if (files.length > 0) { $('fileUpload').files = files; handleFile(files[0]); } });
+    $('fileUpload').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
     // ═══════════════════════════════════════════
-    //  FILE HANDLING & SHEET SELECTION
+    //  EXCLUSION MANAGEMENT
+    // ═══════════════════════════════════════════
+    function excludeArticle(artDesc) {
+        excludedArticles.add(artDesc);
+        dbg(`Escluso: ${artDesc}`, 'warn');
+        renderExclusionPanel();
+        recalculate();
+    }
+
+    function restoreArticle(artDesc) {
+        excludedArticles.delete(artDesc);
+        dbg(`Ripristinato: ${artDesc}`, 'ok');
+        renderExclusionPanel();
+        recalculate();
+    }
+
+    function clearAllExclusions() {
+        excludedArticles.clear();
+        dbg('Tutti gli articoli ripristinati', 'ok');
+        renderExclusionPanel();
+        recalculate();
+    }
+
+    function renderExclusionPanel() {
+        const panel = $('exclusionPanel');
+        const chips = $('exclChips');
+        const count = $('exclCount');
+
+        if (excludedArticles.size === 0) {
+            panel.classList.remove('visible');
+            return;
+        }
+
+        panel.classList.add('visible');
+        count.textContent = excludedArticles.size;
+        chips.innerHTML = '';
+
+        excludedArticles.forEach(desc => {
+            const chip = document.createElement('div');
+            chip.className = 'excl-chip';
+            chip.innerHTML = `<span>${desc}</span><button onclick="restoreArticle('${desc.replace(/'/g, "\\'")}')" title="Ripristina">` +
+                `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>`;
+            chips.appendChild(chip);
+        });
+    }
+
+    // ═══════════════════════════════════════════
+    //  FILE HANDLING
     // ═══════════════════════════════════════════
     function handleFile(file) {
         if (!file) return;
@@ -812,7 +579,6 @@
         showLoader(true);
         clearDebug();
         dbg(`File caricato: "${file.name}"`, 'info');
-
         setTimeout(() => {
             const reader = new FileReader();
             reader.onerror = () => { dbg('Errore lettura file!', 'err'); showLoader(false); };
@@ -842,31 +608,26 @@
             const worksheet = currentWorkbook.Sheets[sheetName];
             originalRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
             if (originalRows.length === 0) { showLoader(false); return; }
-
             headers = originalRows[0];
             colOrderIdx = findExactColumnIndex(headers, ['ordine cliente', 'customer order']);
             colPlantIdx = findExactColumnIndex(headers, ['lista plant compatibili con sales bom', 'sales bom compliant plant list']);
             colArticleIdx = findExactColumnIndex(headers, ['descrizione articolo', 'item description']);
             colItemCodeIdx = findExactColumnIndex(headers, ['articolo', 'item']);
-
             let missingCols = [];
             if (colOrderIdx === -1) missingCols.push("Ordine cliente / Customer order");
-            if (colPlantIdx === -1) missingCols.push("Lista plant compatibili con Sales BOM / Sales BOM Compliant Plant List");
+            if (colPlantIdx === -1) missingCols.push("Lista plant compatibili / Sales BOM Compliant Plant List");
             if (colArticleIdx === -1) missingCols.push("Descrizione articolo / Item description");
             if (colItemCodeIdx === -1) missingCols.push("Articolo / Item");
-
             if (missingCols.length > 0) {
-                alert(`Errore: Impossibile trovare le colonne necessarie nel file:\n\n- ${missingCols.join("\n- ")}\n\nL'elaborazione è stata interrotta.`);
-                showLoader(false);
-                return;
+                alert(`Errore: colonne mancanti:\n\n- ${missingCols.join("\n- ")}`);
+                showLoader(false); return;
             }
-
             processData(originalRows);
         } catch (err) { dbg(`Errore: ${err.message}`, 'err'); showLoader(false); }
     }
 
     // ═══════════════════════════════════════════
-    //  CORE BUSINESS LOGIC - DATA EXTRACTION
+    //  CORE LOGIC
     // ═══════════════════════════════════════════
     function processData(data) {
         dictOrdini.clear();
@@ -876,14 +637,10 @@
             const plant = String(row[colPlantIdx] || "").trim();
             const articoloDesc = String(row[colArticleIdx] || "").trim();
             const articoloCode = String(row[colItemCodeIdx] || "").trim();
-
             if (!ordine || plant === "") continue;
-
             if (!dictOrdini.has(ordine)) dictOrdini.set(ordine, new Map());
-
             const orderItems = dictOrdini.get(ordine);
-            const isBra = /BRA/i.test(plant); 
-
+            const isBra = /BRA/i.test(plant);
             if (!orderItems.has(articoloDesc)) {
                 orderItems.set(articoloDesc, { isBra: isBra, count: 0, code: articoloCode });
             } else {
@@ -896,50 +653,57 @@
     }
 
     // ═══════════════════════════════════════════
-    //  HOLISTIC ROADMAP ALGORITHM (SET COVER)
+    //  HOLISTIC ROADMAP WITH EXCLUSIONS
     // ═══════════════════════════════════════════
     function simulateHolisticRoadmap() {
-        dictOrdiniReali.clear(); 
-        currentRoadmap = []; // Resetta la memoria della roadmap
-        
+        dictOrdiniReali.clear();
+        currentRoadmap = [];
+
         const countMethod = document.querySelector('input[name="countMethod"]:checked').value;
         const isReal = $('isRealToggle').checked;
         const prefixRaw = $('prefixInput').value.trim();
         const prefixInput = prefixRaw.replace(/%/g, '').replace(/\*/g, '');
 
-        let activeOrders = new Map(); // Ordine -> Array di articoli ancora da imparare
-        let allTargetItems = new Map(); // articoloDesc -> { code, totalWeight }
+        let activeOrders = new Map();
+        let allTargetItems = new Map();
+        let permanentlyBlockedOrders = new Set(); // Orders blocked by excluded articles
 
-        // FASE 1: Filtro Ordini & Identificazione Baseline
         dictOrdini.forEach((orderItems, ordine) => {
             let isDisqualified = false;
             let missingArticles = [];
             let hasTargetItem = false;
+            let hasExcludedBlocker = false; // Does this order contain an excluded article that's not BRA?
 
             orderItems.forEach((info, articoloDesc) => {
                 const matchesPrefix = articoloDesc.includes(prefixInput);
-
                 if (!matchesPrefix) {
-                    if (isReal) isDisqualified = true; // Ordine Misto -> Scartato
+                    if (isReal) isDisqualified = true;
                 } else {
                     hasTargetItem = true;
                     let weight = (countMethod === 'righe') ? info.count : 1;
-                    
+
                     if (!allTargetItems.has(articoloDesc)) {
                         allTargetItems.set(articoloDesc, { code: info.code, totalWeight: 0 });
                     }
                     allTargetItems.get(articoloDesc).totalWeight += weight;
 
                     if (!info.isBra) {
-                        missingArticles.push({ desc: articoloDesc, weight: weight }); 
+                        // Check if this missing article is EXCLUDED
+                        if (excludedArticles.has(articoloDesc)) {
+                            hasExcludedBlocker = true; // This order can NEVER be unblocked
+                        } else {
+                            missingArticles.push({ desc: articoloDesc, weight: weight });
+                        }
                     }
                 }
             });
 
             if (isDisqualified || !hasTargetItem) return;
 
-            if (missingArticles.length === 0) {
-                // Ordine già producibile interamente a BRA
+            if (hasExcludedBlocker) {
+                // Order is permanently blocked — excluded articles can never be taught
+                permanentlyBlockedOrders.add(ordine);
+            } else if (missingArticles.length === 0) {
                 dictOrdiniReali.add(ordine);
             } else {
                 activeOrders.set(ordine, missingArticles);
@@ -948,29 +712,26 @@
 
         $('baselineCount').textContent = dictOrdiniReali.size;
 
-        // FASE 2: Simulazione Algoritmo (Effetto Domino)
+        if (excludedArticles.size > 0) {
+            dbg(`Articoli esclusi: ${excludedArticles.size} → ${permanentlyBlockedOrders.size} ordini permanentemente bloccati`, 'warn');
+        }
+
+        // PHASE 2: Greedy simulation (same as before, but excludedArticles are not candidates)
         let itemsToProcess = new Set(allTargetItems.keys());
-        
-        // Scrematura iniziale: ignora articoli target che non bloccano nessun ordine
+        // Remove excluded articles from candidates
+        excludedArticles.forEach(ea => itemsToProcess.delete(ea));
+
         let actuallyMissing = new Set();
         activeOrders.forEach(missing => missing.forEach(m => actuallyMissing.add(m.desc)));
         itemsToProcess.forEach(item => { if (!actuallyMissing.has(item)) itemsToProcess.delete(item); });
 
-        // Definiamo i Pesi Moltiplicatori
-        const W1 = 1000000;
-        const W2 = 10000;
-        const W3 = 100;
-        const W4 = 1;
+        const W1 = 1000000, W2 = 10000, W3 = 100, W4 = 1;
 
-        // Loop principale della simulazione
-        while(itemsToProcess.size > 0 && activeOrders.size > 0) {
-            let bestItem = null;
-            let bestScore = -1;
-            let bestStats = null;
+        while (itemsToProcess.size > 0 && activeOrders.size > 0) {
+            let bestItem = null, bestScore = -1, bestStats = null;
 
-            // Valuta ogni articolo rimasto
             itemsToProcess.forEach(candidate => {
-                let stats = { 
+                let stats = {
                     p1: 0, p2: 0, p3: 0, p4: 0, code: allTargetItems.get(candidate).code, totalImpact: 0,
                     ordersP1: [], ordersP2: [], ordersP3: [], ordersP4: [], ordersTotal: []
                 };
@@ -983,79 +744,59 @@
                         let missingCount = missingList.length;
                         stats.totalImpact += w;
                         stats.ordersTotal.push(ordine);
-
-                        if (missingCount === 1) {
-                            stats.p1 += w;
-                            score += w * W1;
-                            stats.ordersP1.push(ordine);
-                        } else if (missingCount === 2) {
-                            stats.p2 += w;
-                            score += w * W2;
-                            stats.ordersP2.push(ordine);
-                        } else if (missingCount === 3) {
-                            stats.p3 += w;
-                            score += w * W3;
-                            stats.ordersP3.push(ordine);
-                        } else {
-                            stats.p4 += w;
-                            score += w * W4;
-                            stats.ordersP4.push(ordine);
-                        }
+                        if (missingCount === 1) { stats.p1 += w; score += w * W1; stats.ordersP1.push(ordine); }
+                        else if (missingCount === 2) { stats.p2 += w; score += w * W2; stats.ordersP2.push(ordine); }
+                        else if (missingCount === 3) { stats.p3 += w; score += w * W3; stats.ordersP3.push(ordine); }
+                        else { stats.p4 += w; score += w * W4; stats.ordersP4.push(ordine); }
                     }
                 });
 
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestItem = candidate;
-                    bestStats = stats;
-                }
+                if (score > bestScore) { bestScore = score; bestItem = candidate; bestStats = stats; }
             });
 
-            // Se nessuno sblocca nulla di utile, termina
             if (!bestItem || bestScore === 0) break;
 
-            // Crea la stringa della formula per la UI
             let breakdownStr = `(${bestStats.p1} x ${W1.toLocaleString()}) + (${bestStats.p2} x ${W2.toLocaleString()}) + (${bestStats.p3} x ${W3}) + (${bestStats.p4} x ${W4})`;
-
-            // Salva la mossa vincente e i suoi dati
             currentRoadmap.push({ desc: bestItem, stats: bestStats, score: bestScore, breakdown: breakdownStr });
 
-            // SIMULAZIONE: Insegniamo 'bestItem' a BRA
             let newlyReadyOrders = [];
             activeOrders.forEach((missingList, ordine) => {
                 let initialLen = missingList.length;
                 let filteredList = missingList.filter(m => m.desc !== bestItem);
-                
-                if (filteredList.length === 0 && initialLen > 0) {
-                    newlyReadyOrders.push(ordine); // L'ordine cade (è sbloccato)
-                } else {
-                    activeOrders.set(ordine, filteredList); // L'ordine avanza di livello
-                }
+                if (filteredList.length === 0 && initialLen > 0) { newlyReadyOrders.push(ordine); }
+                else { activeOrders.set(ordine, filteredList); }
             });
-
-            // Pulizia
             newlyReadyOrders.forEach(ord => activeOrders.delete(ord));
             itemsToProcess.delete(bestItem);
         }
 
-        // FASE 3: Rendering
+        // PHASE 3: Render
+        let exclChipHtml = '';
+        if (excludedArticles.size > 0) {
+            exclChipHtml = `<div class="stat-chip stat-excluded">
+                <span class="stat-num">${permanentlyBlockedOrders.size}</span>
+                <span class="stat-label">Ordini Perm. Bloccati (articoli esclusi)</span>
+            </div>`;
+        }
+
         $('summaryBar').innerHTML = `
-            <div class="stat-chip">
-                <span class="stat-num">${dictOrdini.size}</span>
-                <span class="stat-label">Ordini Totali Letti</span>
-            </div>
-            <div class="stat-chip">
-                <span class="stat-num">${currentRoadmap.length}</span>
-                <span class="stat-label">Articoli nella Roadmap Ottimizzata</span>
-            </div>
+            <div class="stat-chip"><span class="stat-num">${dictOrdini.size}</span><span class="stat-label">Ordini Totali</span></div>
+            <div class="stat-chip"><span class="stat-num">${currentRoadmap.length}</span><span class="stat-label">Articoli nella Roadmap</span></div>
+            ${exclChipHtml}
         `;
+
+        if (excludedArticles.size > 0) {
+            $('exclImpact').textContent = `${permanentlyBlockedOrders.size} ordini non potranno mai essere trasferiti a BRA`;
+        } else {
+            $('exclImpact').textContent = '';
+        }
 
         const tbody = $('reportTableBody');
         tbody.innerHTML = '';
 
         if (currentRoadmap.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
-                Tutti gli ordini validi sono già interamente producibili a BRA. Non serve alcuna Roadmap.
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
+                Tutti gli ordini validi sono già producibili a BRA o permanentemente bloccati. Non serve alcuna Roadmap.
             </td></tr>`;
         } else {
             const fragment = document.createDocumentFragment();
@@ -1064,20 +805,19 @@
                 const artDesc = itemData.desc;
                 const tr = document.createElement('tr');
 
-                // Costruzione celle numeriche cliccabili
                 const cellP1 = s.p1 > 0 ? `<td><span class="success-val clickable-green" onclick="triggerDrillDown('sim_priority', ${index}, 1)">+${s.p1}</span></td>` : `<td class="zero-val">0</td>`;
                 const cellP2 = s.p2 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 2)">${s.p2}</td>` : `<td class="zero-val">0</td>`;
                 const cellP3 = s.p3 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 3)">${s.p3}</td>` : `<td class="zero-val">0</td>`;
                 const cellP4 = s.p4 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 4)">${s.p4}</td>` : `<td class="zero-val">0</td>`;
                 const cellTot = s.totalImpact > 0 ? `<td class="col-total clickable" onclick="triggerDrillDown('sim_priority', ${index}, 0)">${s.totalImpact}</td>` : `<td class="col-total zero-val">0</td>`;
                 const cellScore = `<td class="col-score"><span class="clickable-purple" onclick="triggerDrillDown('score', ${index}, null)">${itemData.score.toLocaleString()}</span></td>`;
+                const cellExcl = `<td><button class="btn-exclude" onclick="excludeArticle('${artDesc.replace(/'/g, "\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>Escludi</button></td>`;
 
                 tr.innerHTML =
                     `<td>${index + 1}</td>` +
                     `<td>${s.code}</td>` +
-                    `<td><span class="clickable" onclick="triggerDrillDown('item', '${artDesc.replace(/'/g, "\\'")}')" title="Mostra gli ordini originariamente bloccati da questo articolo">${artDesc}</span></td>` +
-                    cellP1 + cellP2 + cellP3 + cellP4 + cellTot + cellScore;
-
+                    `<td><span class="clickable" onclick="triggerDrillDown('item', '${artDesc.replace(/'/g, "\\'")}')" title="Ordini bloccati da questo articolo">${artDesc}</span></td>` +
+                    cellP1 + cellP2 + cellP3 + cellP4 + cellTot + cellScore + cellExcl;
                 fragment.appendChild(tr);
             });
             tbody.appendChild(fragment);
@@ -1089,7 +829,7 @@
     }
 
     // ═══════════════════════════════════════════
-    //  DRILL-DOWN
+    //  DRILL-DOWN (unchanged logic)
     // ═══════════════════════════════════════════
     function triggerDrillDown(type, arg1, arg2) {
         const targetOrders = new Set();
@@ -1099,98 +839,64 @@
         if (type === 'baseline') {
             $('modalTitle').textContent = "Dettaglio: Ordini Base (Pronti all'inizio)";
             dictOrdiniReali.forEach(ord => targetOrders.add(ord));
-        
         } else if (type === 'item') {
             const targetStr = arg1;
-            $('modalTitle').textContent = `Ordini originariamente bloccati contenenti: ${targetStr}`;
+            $('modalTitle').textContent = `Ordini bloccati contenenti: ${targetStr}`;
             dictOrdini.forEach((orderItems, ordine) => {
-                if (orderItems.has(targetStr) && !dictOrdiniReali.has(ordine)) {
-                    targetOrders.add(ordine);
-                }
+                if (orderItems.has(targetStr) && !dictOrdiniReali.has(ordine)) targetOrders.add(ordine);
             });
-            
         } else if (type === 'sim_priority') {
-            const stepIndex = arg1;
-            const priorityLevel = arg2;
+            const stepIndex = arg1, priorityLevel = arg2;
             const stepData = currentRoadmap[stepIndex];
-            
-            let orderList = [];
-            let prioLabel = "";
-            
-            if (priorityLevel === 1) { orderList = stepData.stats.ordersP1; prioLabel = "Sblocca Subito (+100% completi)"; }
-            else if (priorityLevel === 2) { orderList = stepData.stats.ordersP2; prioLabel = "Avanzano a 1 blocco residuo"; }
-            else if (priorityLevel === 3) { orderList = stepData.stats.ordersP3; prioLabel = "Avanzano a 2 blocchi residui"; }
-            else if (priorityLevel === 4) { orderList = stepData.stats.ordersP4; prioLabel = "Restano con >3 blocchi"; }
-            else if (priorityLevel === 0) { orderList = stepData.stats.ordersTotal; prioLabel = "Totale ordini con impatto a questo step"; }
-
+            let orderList = [], prioLabel = "";
+            if (priorityLevel === 1) { orderList = stepData.stats.ordersP1; prioLabel = "Sblocca Subito"; }
+            else if (priorityLevel === 2) { orderList = stepData.stats.ordersP2; prioLabel = "Avanzano a 1 blocco"; }
+            else if (priorityLevel === 3) { orderList = stepData.stats.ordersP3; prioLabel = "Avanzano a 2 blocchi"; }
+            else if (priorityLevel === 4) { orderList = stepData.stats.ordersP4; prioLabel = "Restano >3 blocchi"; }
+            else if (priorityLevel === 0) { orderList = stepData.stats.ordersTotal; prioLabel = "Totale impatto"; }
             $('modalTitle').textContent = `Step ${stepIndex + 1} - ${stepData.desc} (${prioLabel})`;
             orderList.forEach(ord => targetOrders.add(ord));
-
         } else if (type === 'score') {
-            const stepIndex = arg1;
-            const stepData = currentRoadmap[stepIndex];
-            
-            $('modalTitle').textContent = `Dettaglio Score Algoritmo: Step ${stepIndex + 1}`;
-            customModalInfo = `Formula Ponderata: ${stepData.breakdown} = ${stepData.score.toLocaleString()} Punti Totali.`;
-            
-            // Popoliamo la griglia con tutti gli ordini valutati in questo calcolo
+            const stepIndex = arg1, stepData = currentRoadmap[stepIndex];
+            $('modalTitle').textContent = `Score Step ${stepIndex + 1}`;
+            customModalInfo = `Formula: ${stepData.breakdown} = ${stepData.score.toLocaleString()}`;
             stepData.stats.ordersTotal.forEach(ord => targetOrders.add(ord));
         }
 
         if (targetOrders.size === 0) return;
-
         const resultRows = [];
         for (let i = 1; i < originalRows.length; i++) {
             const ord = String(originalRows[i][colOrderIdx] || "").trim();
             if (targetOrders.has(ord)) resultRows.push(originalRows[i]);
         }
-
         currentExportData = [headers, ...resultRows];
         renderModalData(headers, resultRows, customModalInfo);
         $('drillDownModal').classList.add('open');
     }
 
     function renderModalData(hdrs, rows, customInfoPrefix) {
-        let infoStr = `${rows.length} righe originali — ${new Set(rows.map(r => String(r[colOrderIdx] || "").trim())).size} ordini distinti`;
-        if (customInfoPrefix) {
-            infoStr = `<strong style="color:var(--purple);">${customInfoPrefix}</strong><br>` + infoStr;
-        }
+        let infoStr = `${rows.length} righe — ${new Set(rows.map(r => String(r[colOrderIdx] || "").trim())).size} ordini`;
+        if (customInfoPrefix) infoStr = `<strong style="color:var(--purple);">${customInfoPrefix}</strong><br>` + infoStr;
         $('modalInfo').innerHTML = infoStr;
-
-        const thead = $('modalThead');
-        const tbody = $('modalTbody');
+        const thead = $('modalThead'), tbody = $('modalTbody');
         thead.innerHTML = ''; tbody.innerHTML = '';
-
         const trHead = document.createElement('tr');
-        hdrs.forEach(h => {
-            const th = document.createElement('th');
-            th.textContent = h || '';
-            trHead.appendChild(th);
-        });
+        hdrs.forEach(h => { const th = document.createElement('th'); th.textContent = h || ''; trHead.appendChild(th); });
         thead.appendChild(trHead);
-
-        const DISPLAY_LIMIT = 2000;
-        const rowsToDisplay = rows.slice(0, DISPLAY_LIMIT);
+        const LIMIT = 2000;
         const fragment = document.createDocumentFragment();
-
-        rowsToDisplay.forEach(row => {
+        rows.slice(0, LIMIT).forEach(row => {
             const tr = document.createElement('tr');
-            for (let c = 0; c < hdrs.length; c++) {
-                const td = document.createElement('td');
-                td.textContent = row[c] !== undefined ? row[c] : '';
-                tr.appendChild(td);
-            }
+            for (let c = 0; c < hdrs.length; c++) { const td = document.createElement('td'); td.textContent = row[c] !== undefined ? row[c] : ''; tr.appendChild(td); }
             fragment.appendChild(tr);
         });
         tbody.appendChild(fragment);
-
-        const existingNotice = $('drillDownModal').querySelector('.truncation-notice');
-        if (existingNotice) existingNotice.remove();
-
-        if (rows.length > DISPLAY_LIMIT) {
+        const existing = $('drillDownModal').querySelector('.truncation-notice');
+        if (existing) existing.remove();
+        if (rows.length > LIMIT) {
             const notice = document.createElement('div');
             notice.className = 'truncation-notice';
-            notice.textContent = `Visualizzate ${DISPLAY_LIMIT} righe su ${rows.length}. Usa "Scarica Excel" per il set completo.`;
+            notice.textContent = `Visualizzate ${LIMIT} su ${rows.length}. Scarica Excel per il set completo.`;
             $('drillDownModal').querySelector('.modal-body').appendChild(notice);
         }
     }
@@ -1199,22 +905,14 @@
         if (!currentExportData || currentExportData.length === 0) return;
         const ws = XLSX.utils.aoa_to_sheet(currentExportData);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Dettaglio Drill-down");
-        const now = new Date();
-        const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0') + String(now.getSeconds()).padStart(2, '0');
-        
-        let filename = "Export.xlsx";
-        if (currentModalContext.type === 'baseline') {
-            filename = `OrdiniPronti_${timeStr}.xlsx`;
-        } else if (currentModalContext.type === 'item') {
-            filename = `${currentModalContext.arg1.replace(/[%/\\]/g, "").substring(0, 10)}_Bloccati_${timeStr}.xlsx`;
-        } else if (currentModalContext.type === 'sim_priority') {
-            filename = `Step${currentModalContext.arg1 + 1}_Priorita${currentModalContext.arg2}_${timeStr}.xlsx`;
-        } else if (currentModalContext.type === 'score') {
-            filename = `Step${currentModalContext.arg1 + 1}_ScoreAlgoritmo_${timeStr}.xlsx`;
-        }
-
-        XLSX.writeFile(wb, filename);
+        XLSX.utils.book_append_sheet(wb, ws, "Dettaglio");
+        const ts = new Date().toTimeString().slice(0,8).replace(/:/g,'');
+        let fn = "Export.xlsx";
+        if (currentModalContext.type === 'baseline') fn = `OrdiniPronti_${ts}.xlsx`;
+        else if (currentModalContext.type === 'item') fn = `${currentModalContext.arg1.replace(/[%/\\]/g,"").substring(0,10)}_${ts}.xlsx`;
+        else if (currentModalContext.type === 'sim_priority') fn = `Step${currentModalContext.arg1+1}_P${currentModalContext.arg2}_${ts}.xlsx`;
+        else if (currentModalContext.type === 'score') fn = `Step${currentModalContext.arg1+1}_Score_${ts}.xlsx`;
+        XLSX.writeFile(wb, fn);
     }
 
     function closeModal() { $('drillDownModal').classList.remove('open'); }
