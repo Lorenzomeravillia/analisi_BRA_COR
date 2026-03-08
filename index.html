@@ -46,7 +46,7 @@
             line-height: 1.5; min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
-        .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
 
         header {
             margin-bottom: 28px; padding-bottom: 20px;
@@ -62,17 +62,27 @@
         }
         header p { width: 100%; font-size: 0.82rem; color: var(--text-muted); }
 
+        /* CONTROLS PANEL GRID */
         .controls-panel {
             background: var(--surface); border: 1px solid var(--border);
             border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
             margin-bottom: 28px; display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1.2fr 1fr;
             overflow: hidden;
         }
-        @media (max-width: 900px) { .controls-panel { grid-template-columns: 1fr; } }
         .control-section { padding: 22px 24px; display: flex; flex-direction: column; }
         .control-section + .control-section { border-left: 1px solid var(--border); }
-        @media (max-width: 900px) { .control-section + .control-section { border-left: none; border-top: 1px solid var(--border); } }
+        
+        @media (max-width: 1100px) { 
+            .controls-panel { grid-template-columns: 1fr 1fr; }
+            .control-section:nth-child(3) { border-left: none; border-top: 1px solid var(--border); }
+            .control-section:nth-child(4) { border-top: 1px solid var(--border); }
+        }
+        @media (max-width: 700px) { 
+            .controls-panel { grid-template-columns: 1fr; }
+            .control-section + .control-section { border-left: none; border-top: 1px solid var(--border); }
+        }
+
         .control-label {
             font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 14px;
@@ -113,6 +123,18 @@
         }
         .radio-label:hover { background: var(--surface-alt); }
         .radio-label input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+        /* WEIGHTS GRID */
+        .weights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .weight-input-wrap { display: flex; flex-direction: column; gap: 4px; }
+        .weight-input-wrap label { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
+        .weight-input-wrap input {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+            padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
+            outline: none; transition: all 0.2s; background: var(--surface-alt);
+            width: 100%;
+        }
+        .weight-input-wrap input:focus { border-color: var(--border-focus); background: white; box-shadow: 0 0 0 2px rgba(74,124,255,0.12); }
 
         .upload-zone {
             flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -468,8 +490,8 @@
 <div class="container">
     <header>
         <h1>Analisi Report RND</h1>
-        <span class="badge">Client-Side v3</span>
-        <p>Roadmap Olistica con Filtri Dati, Esclusione Articoli e Rilevamento Anomalie Distinte.</p>
+        <span class="badge">Client-Side v4</span>
+        <p>Roadmap Olistica con Filtri Dati, Esclusione Articoli, Rilevamento Anomalie Distinte e Pesi Score Dinamici.</p>
     </header>
 
     <div class="controls-panel">
@@ -483,12 +505,13 @@
                     </div>
                     <div class="toggle-text">
                         <strong>Escludi Ordini Misti</strong>
-                        <small>Se attivo, scarta interamente gli ordini che contengono articoli non appartenenti alla famiglia.</small>
+                        <small>Se attivo, scarta ordini contenenti articoli non della famiglia.</small>
                     </div>
                 </label>
                 <input type="text" id="prefixInput" value="%TL1X" class="prefix-input" placeholder="Prefisso Famiglia">
             </div>
         </div>
+        
         <div class="control-section">
             <div class="control-label">2 &middot; Unità di misura</div>
             <div class="control-body">
@@ -502,14 +525,37 @@
                         <span class="toggle-slider"></span>
                     </div>
                     <div class="toggle-text">
-                        <strong>Confronto vs Pivot</strong>
-                        <small>Mostra quanto l'algoritmo batte l'ordinamento statico (la "pivot").</small>
+                        <strong>Confronto Pivot</strong>
+                        <small>Mostra algoritmo vs statica.</small>
                     </div>
                 </label>
             </div>
         </div>
+
         <div class="control-section">
-            <div class="control-label">3 &middot; Carica file</div>
+            <div class="control-label">3 &middot; Pesi Score (Importanza)</div>
+            <div class="control-body weights-grid">
+                <div class="weight-input-wrap">
+                    <label>Sblocca Subito (W1)</label>
+                    <input type="number" id="weight1" value="1000000">
+                </div>
+                <div class="weight-input-wrap">
+                    <label>Avanza a 1 blocco (W2)</label>
+                    <input type="number" id="weight2" value="10000">
+                </div>
+                <div class="weight-input-wrap">
+                    <label>Avanza a 2 blocchi (W3)</label>
+                    <input type="number" id="weight3" value="100">
+                </div>
+                <div class="weight-input-wrap">
+                    <label>Restano >3 blocchi (W4)</label>
+                    <input type="number" id="weight4" value="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <div class="control-label">4 &middot; Carica file</div>
             <div class="control-body">
                 <div class="upload-zone" id="uploadZone">
                     <input id="fileUpload" type="file" accept=".xlsx,.xls,.csv" />
@@ -878,6 +924,9 @@
     $('prefixInput').addEventListener('input', onParamChange);
     $('showNaiveToggle').addEventListener('change', onParamChange);
     document.querySelectorAll('input[name="countMethod"]').forEach(r => r.addEventListener('change', onParamChange));
+    ['weight1', 'weight2', 'weight3', 'weight4'].forEach(id => {
+        $(id).addEventListener('input', onParamChange);
+    });
 
     function recalculate() {
         if (!originalRows || originalRows.length === 0) return;
@@ -1082,7 +1131,7 @@
     }
 
     // ═══════════════════════════════════════════
-    //  HOLISTIC ROADMAP WITH EXCLUSIONS
+    //  HOLISTIC ROADMAP WITH EXCLUSIONS & DYNAMIC WEIGHTS
     // ═══════════════════════════════════════════
     function simulateHolisticRoadmap() {
         dictOrdiniReali.clear();
@@ -1092,6 +1141,12 @@
         const isReal = $('isRealToggle').checked;
         const prefixRaw = $('prefixInput').value.trim();
         const prefixInput = prefixRaw.replace(/%/g, '').replace(/\*/g, '');
+
+        // Fetch dynamic weights from UI inputs (fallback to defaults if invalid)
+        const W1 = parseInt($('weight1').value) || 1000000;
+        const W2 = parseInt($('weight2').value) || 10000;
+        const W3 = parseInt($('weight3').value) || 100;
+        const W4 = parseInt($('weight4').value) || 1;
 
         let activeOrders = new Map();
         let allTargetItems = new Map();
@@ -1150,8 +1205,6 @@
         activeOrders.forEach(missing => missing.forEach(m => actuallyMissing.add(m.desc)));
         itemsToProcess.forEach(item => { if (!actuallyMissing.has(item)) itemsToProcess.delete(item); });
 
-        const W1 = 1000000, W2 = 10000, W3 = 100, W4 = 1;
-
         while (itemsToProcess.size > 0 && activeOrders.size > 0) {
             let bestItem = null, bestScore = -1, bestStats = null;
 
@@ -1181,7 +1234,7 @@
 
             if (!bestItem || bestScore === 0) break;
 
-            let breakdownStr = `(${bestStats.p1} x ${W1.toLocaleString()}) + (${bestStats.p2} x ${W2.toLocaleString()}) + (${bestStats.p3} x ${W3}) + (${bestStats.p4} x ${W4})`;
+            let breakdownStr = `(${bestStats.p1} x ${W1.toLocaleString()}) + (${bestStats.p2} x ${W2.toLocaleString()}) + (${bestStats.p3} x ${W3.toLocaleString()}) + (${bestStats.p4} x ${W4.toLocaleString()})`;
             currentRoadmap.push({ desc: bestItem, stats: bestStats, score: bestScore, breakdown: breakdownStr });
 
             let newlyReadyOrders = [];
