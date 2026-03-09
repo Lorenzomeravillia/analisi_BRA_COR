@@ -306,6 +306,14 @@
             margin-left: auto; font-size: 0.82rem; color: var(--text-secondary);
         }
         .filter-row-count strong { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+        
+        .too-many-values-notice {
+            margin-top: 16px; padding: 12px 16px; background: var(--amber-bg);
+            border: 1px dashed var(--amber-border); border-radius: 8px;
+            font-size: 0.82rem; color: #92400e; line-height: 1.5;
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .too-many-values-notice svg { flex-shrink: 0; color: var(--amber); margin-top: 2px; }
 
         .debug-panel { display: none; margin-bottom: 24px; background: #1a1d23; border-radius: var(--radius); overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
         .debug-panel.visible { display: block; }
@@ -490,8 +498,8 @@
 <div class="container">
     <header>
         <h1>Analisi Report RND</h1>
-        <span class="badge">Client-Side v5.1</span>
-        <p>Roadmap Olistica con metriche coerenti e reportistica di dettaglio per algoritmo Greedy e classifica Pivot statica.</p>
+        <span class="badge">Client-Side v5.2</span>
+        <p>Roadmap Olistica con metriche coerenti, reportistica Pivot e avvisi sui limiti dei filtri.</p>
     </header>
 
     <div class="controls-panel">
@@ -567,7 +575,7 @@
         </div>
     </div>
 
-    <div class="filter-panel collapsed" id="filterPanel">
+    <div class="filter-panel" id="filterPanel">
         <div class="filter-header" onclick="toggleFilterPanel()">
             <div class="filter-header-left">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
@@ -582,7 +590,7 @@
         </div>
         <div class="filter-body">
             <div class="filter-grid" id="filterGrid"></div>
-        </div>
+            </div>
         <div class="filter-actions">
             <button class="btn-sm btn-recalc-excl" onclick="applyFiltersAndRecalc()">Applica Filtri e Ricalcola</button>
             <button class="btn-sm btn-clear-all" style="background:#e5e7eb;color:var(--text);" onclick="resetAllFilters()">Reset Filtri</button>
@@ -726,19 +734,20 @@
     let originalRows = [];
     let currentWorkbook = null;
     let currentRoadmap = [];
-    let naiveRoadmap = []; // Added for Pivot Drill-down
+    let naiveRoadmap = []; 
     let currentExportData = [];
     let currentModalContext = { type: '', arg1: null, arg2: null, isNaive: false };
     let colOrderIdx = -1, colPlantIdx = -1, colArticleIdx = -1, colItemCodeIdx = -1, colCoLineIdx = -1;
     let dataIsLoaded = false;
     let anomalieMiste = []; 
-    let orderWeights = new Map(); // Global storage for true order weights
+    let orderWeights = new Map(); 
 
     // EXCLUSION STATE
     let excludedArticles = new Set();
 
     // FILTER STATE
     let filterConfig = new Map();
+    let skippedFilterCols = []; // Track columns that exceed MAX_DISTINCT
     let filteredRows = [];
     const MIN_DISTINCT = 2;
     const MAX_DISTINCT = 40;
@@ -748,6 +757,7 @@
     // ═══════════════════════════════════════════
     function scanColumnsForFilters(data) {
         filterConfig.clear();
+        skippedFilterCols = [];
         if (data.length < 2) return;
 
         const hdr = data[0];
@@ -773,16 +783,19 @@
                     values.set(val, { count: cnt, checked: true });
                 });
                 filterConfig.set(c, { header: colName, values: values });
+            } else if (distinct > MAX_DISTINCT) {
+                skippedFilterCols.push({ header: colName, count: distinct });
             }
         }
-        dbg(`Filtri auto-rilevati: ${filterConfig.size} colonne categoriche`, 'ok');
+        dbg(`Filtri auto-rilevati: ${filterConfig.size} colonne categoriche. Escluse ${skippedFilterCols.length} per limite superato.`, 'ok');
     }
 
     function renderFilterPanel() {
         const panel = $('filterPanel');
         const grid = $('filterGrid');
 
-        if (filterConfig.size === 0) {
+        // Mostra il pannello se c'è almeno un filtro OPPURE se ci sono colonne scartate da segnalare
+        if (filterConfig.size === 0 && skippedFilterCols.length === 0) {
             panel.classList.remove('visible');
             return;
         }
@@ -820,6 +833,19 @@
             group.appendChild(opts);
             grid.appendChild(group);
         });
+
+        // Gestione avviso per colonne scartate
+        let existingNotice = panel.querySelector('.too-many-values-notice');
+        if (existingNotice) existingNotice.remove();
+
+        if (skippedFilterCols.length > 0) {
+            const notice = document.createElement('div');
+            notice.className = 'too-many-values-notice';
+            let colsHtml = skippedFilterCols.map(c => `<strong>${c.header}</strong> (${c.count} valori)`).join(', ');
+            notice.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div>Alcune colonne del tuo file non sono filtrabili qui perché superano il limite di ${MAX_DISTINCT} valori distinti: <br>${colsHtml}</div>`;
+            panel.querySelector('.filter-body').appendChild(notice);
+        }
 
         updateFilterCountDisplay();
     }
@@ -1338,7 +1364,7 @@
 
                 naiveRoadmap.push({ desc: art, stats: stats, score: score, breakdown: "Conteggio statico blocchi in assoluto" });
 
-                // Sblocco a cascata simulato statitcamente
+                // Sblocco a cascata simulato staticamente
                 let unlocked = 0;
                 let toRemove = [];
                 naiveActive.forEach((data, ord) => {
