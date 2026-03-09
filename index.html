@@ -261,30 +261,55 @@
         .filter-panel.collapsed .filter-body { display: none; }
         .filter-body { padding: 16px 20px; }
         .filter-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
         }
+        
+        /* Updated Filter Group for Collapsible + Search */
         .filter-col-group {
             background: var(--surface-alt); border: 1px solid var(--border);
-            border-radius: 8px; padding: 12px; max-height: 220px;
-            display: flex; flex-direction: column;
+            border-radius: 8px; display: flex; flex-direction: column;
+            overflow: hidden;
         }
-        .filter-col-title {
-            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center;
+        .filter-col-header-bar {
+            padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; user-select: none; background: var(--surface-alt);
+            transition: background 0.15s;
         }
-        .filter-col-title .filter-col-actions { display: flex; gap: 6px; }
-        .filter-col-title .filter-col-actions button {
+        .filter-col-header-bar:hover { background: #eef0f4; }
+        .filter-col-title-left {
+            display: flex; align-items: center; gap: 8px; font-size: 0.72rem;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        .filter-col-title-left span strong { color: var(--text); }
+        .filter-col-chevron-inner { transition: transform 0.2s; color: var(--text-muted); }
+        .filter-col-group.collapsed .filter-col-chevron-inner { transform: rotate(-90deg); }
+        
+        .filter-col-actions { display: flex; gap: 6px; }
+        .filter-col-actions button {
             font-size: 0.65rem; font-weight: 600; padding: 2px 6px;
             border-radius: 4px; border: 1px solid var(--border);
             background: var(--surface); color: var(--text-muted);
             cursor: pointer; font-family: inherit; transition: all 0.15s;
         }
-        .filter-col-title .filter-col-actions button:hover { border-color: var(--accent); color: var(--accent); }
-        .filter-options {
-            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px;
+        .filter-col-actions button:hover { border-color: var(--accent); color: var(--accent); }
+        
+        .filter-body-wrapper {
+            display: flex; flex-direction: column; padding: 0 12px 12px 12px;
+            max-height: 250px;
         }
+        .filter-col-group.collapsed .filter-body-wrapper { display: none; }
+        
+        .filter-search-wrap { padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+        .filter-search-input {
+            width: 100%; padding: 6px 10px; font-family: 'DM Sans', sans-serif;
+            font-size: 0.8rem; border: 1px solid var(--border); border-radius: 6px;
+            outline: none; transition: border-color 0.15s;
+        }
+        .filter-search-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 2px rgba(74,124,255,0.12); }
+
+        .filter-options { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
         .filter-opt {
             display: flex; align-items: center; gap: 8px;
             padding: 4px 6px; border-radius: 4px; cursor: pointer;
@@ -292,10 +317,10 @@
         }
         .filter-opt:hover { background: var(--surface); }
         .filter-opt input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
-        .filter-opt label { cursor: pointer; flex: 1; color: var(--text-secondary); display: flex; justify-content: space-between; }
+        .filter-opt label { cursor: pointer; flex: 1; color: var(--text-secondary); display: flex; justify-content: space-between; word-break: break-all; }
         .filter-opt label .filter-val-count {
             font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
-            color: var(--text-muted); margin-left: 8px;
+            color: var(--text-muted); margin-left: 8px; flex-shrink: 0;
         }
         .filter-opt.unchecked label { color: var(--text-muted); text-decoration: line-through; }
         .filter-actions {
@@ -307,14 +332,6 @@
         }
         .filter-row-count strong { font-family: 'JetBrains Mono', monospace; color: var(--text); }
         
-        .too-many-values-notice {
-            margin-top: 16px; padding: 12px 16px; background: var(--amber-bg);
-            border: 1px dashed var(--amber-border); border-radius: 8px;
-            font-size: 0.82rem; color: #92400e; line-height: 1.5;
-            display: flex; gap: 10px; align-items: flex-start;
-        }
-        .too-many-values-notice svg { flex-shrink: 0; color: var(--amber); margin-top: 2px; }
-
         .debug-panel { display: none; margin-bottom: 24px; background: #1a1d23; border-radius: var(--radius); overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
         .debug-panel.visible { display: block; }
         .debug-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #2a2d33; color: #9aa0ab; }
@@ -498,8 +515,8 @@
 <div class="container">
     <header>
         <h1>Analisi Report RND</h1>
-        <span class="badge">Client-Side v5.2</span>
-        <p>Roadmap Olistica con metriche coerenti, reportistica Pivot e avvisi sui limiti dei filtri.</p>
+        <span class="badge">Client-Side v6.0</span>
+        <p>Roadmap Olistica con metriche coerenti, reportistica Pivot e filtri avanzati senza limiti.</p>
     </header>
 
     <div class="controls-panel">
@@ -590,7 +607,7 @@
         </div>
         <div class="filter-body">
             <div class="filter-grid" id="filterGrid"></div>
-            </div>
+        </div>
         <div class="filter-actions">
             <button class="btn-sm btn-recalc-excl" onclick="applyFiltersAndRecalc()">Applica Filtri e Ricalcola</button>
             <button class="btn-sm btn-clear-all" style="background:#e5e7eb;color:var(--text);" onclick="resetAllFilters()">Reset Filtri</button>
@@ -747,17 +764,14 @@
 
     // FILTER STATE
     let filterConfig = new Map();
-    let skippedFilterCols = []; // Track columns that exceed MAX_DISTINCT
     let filteredRows = [];
-    const MIN_DISTINCT = 2;
-    const MAX_DISTINCT = 40;
+    const MIN_DISTINCT = 2; // Rimosso il limite MAX_DISTINCT
 
     // ═══════════════════════════════════════════
     //  FILTER SYSTEM
     // ═══════════════════════════════════════════
     function scanColumnsForFilters(data) {
         filterConfig.clear();
-        skippedFilterCols = [];
         if (data.length < 2) return;
 
         const hdr = data[0];
@@ -776,26 +790,24 @@
             }
 
             const distinct = valCounts.size;
-            if (distinct >= MIN_DISTINCT && distinct <= MAX_DISTINCT) {
+            // Rimosso il tetto massimo, teniamo solo il minimo di 2 valori distinti per evitare filtri inutili
+            if (distinct >= MIN_DISTINCT) {
                 const values = new Map();
                 const sorted = [...valCounts.entries()].sort((a, b) => b[1] - a[1]);
                 sorted.forEach(([val, cnt]) => {
                     values.set(val, { count: cnt, checked: true });
                 });
                 filterConfig.set(c, { header: colName, values: values });
-            } else if (distinct > MAX_DISTINCT) {
-                skippedFilterCols.push({ header: colName, count: distinct });
             }
         }
-        dbg(`Filtri auto-rilevati: ${filterConfig.size} colonne categoriche. Escluse ${skippedFilterCols.length} per limite superato.`, 'ok');
+        dbg(`Filtri auto-rilevati: ${filterConfig.size} colonne categoriche configurate (limite massimo rimosso).`, 'ok');
     }
 
     function renderFilterPanel() {
         const panel = $('filterPanel');
         const grid = $('filterGrid');
 
-        // Mostra il pannello se c'è almeno un filtro OPPURE se ci sono colonne scartate da segnalare
-        if (filterConfig.size === 0 && skippedFilterCols.length === 0) {
+        if (filterConfig.size === 0) {
             panel.classList.remove('visible');
             return;
         }
@@ -805,49 +817,96 @@
 
         filterConfig.forEach((colConf, colIdx) => {
             const group = document.createElement('div');
-            group.className = 'filter-col-group';
+            group.className = 'filter-col-group collapsed'; // Collassato di default
 
-            const title = document.createElement('div');
-            title.className = 'filter-col-title';
-            title.innerHTML = `<span>${colConf.header}</span>
+            // Header cliccabile per il collasso
+            const headerBar = document.createElement('div');
+            headerBar.className = 'filter-col-header-bar';
+            headerBar.onclick = (e) => {
+                if(e.target.tagName !== 'BUTTON') {
+                    group.classList.toggle('collapsed');
+                }
+            };
+            
+            headerBar.innerHTML = `
+                <div class="filter-col-title-left">
+                    <svg class="filter-col-chevron-inner" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    <span><strong>${colConf.header}</strong> (${colConf.values.size})</span>
+                </div>
                 <span class="filter-col-actions">
-                    <button onclick="toggleFilterCol(${colIdx}, true)">Tutti</button>
-                    <button onclick="toggleFilterCol(${colIdx}, false)">Nessuno</button>
-                </span>`;
-            group.appendChild(title);
+                    <button onclick="toggleFilterCol(${colIdx}, true); event.stopPropagation();">Tutti</button>
+                    <button onclick="toggleFilterCol(${colIdx}, false); event.stopPropagation();">Nessuno</button>
+                </span>
+            `;
+            group.appendChild(headerBar);
 
+            // Wrapper corpo filtro
+            const bodyWrapper = document.createElement('div');
+            bodyWrapper.className = 'filter-body-wrapper';
+
+            // Ricerca Jolly
+            const searchWrap = document.createElement('div');
+            searchWrap.className = 'filter-search-wrap';
+            searchWrap.innerHTML = `<input type="text" class="filter-search-input" placeholder="Cerca (usa * per jolly)..." onkeyup="filterOptionsSearch(this, ${colIdx})">`;
+            bodyWrapper.appendChild(searchWrap);
+
+            // Container opzioni
             const opts = document.createElement('div');
             opts.className = 'filter-options';
             opts.id = `filterOpts_${colIdx}`;
 
+            // Uso Fragment per velocizzare il DOM se ci sono migliaia di valori
+            const fragment = document.createDocumentFragment();
+            let optCount = 0;
             colConf.values.forEach((info, val) => {
+                optCount++;
                 const opt = document.createElement('div');
                 opt.className = 'filter-opt' + (info.checked ? '' : ' unchecked');
-                const id = `f_${colIdx}_${val.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                opt.setAttribute('data-val', val); // Serve per il filter della search
+                
+                const id = `f_${colIdx}_${optCount}`;
+                // Attenzione a passare il valore al JS in modo pulito
                 opt.innerHTML = `<input type="checkbox" id="${id}" ${info.checked ? 'checked' : ''} 
                     onchange="onFilterChange(${colIdx}, '${val.replace(/'/g, "\\'")}', this.checked)">
                     <label for="${id}"><span>${val}</span><span class="filter-val-count">${info.count}</span></label>`;
-                opts.appendChild(opt);
+                fragment.appendChild(opt);
             });
 
-            group.appendChild(opts);
+            opts.appendChild(fragment);
+            bodyWrapper.appendChild(opts);
+            group.appendChild(bodyWrapper);
+            
             grid.appendChild(group);
         });
 
-        // Gestione avviso per colonne scartate
-        let existingNotice = panel.querySelector('.too-many-values-notice');
-        if (existingNotice) existingNotice.remove();
-
-        if (skippedFilterCols.length > 0) {
-            const notice = document.createElement('div');
-            notice.className = 'too-many-values-notice';
-            let colsHtml = skippedFilterCols.map(c => `<strong>${c.header}</strong> (${c.count} valori)`).join(', ');
-            notice.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                <div>Alcune colonne del tuo file non sono filtrabili qui perché superano il limite di ${MAX_DISTINCT} valori distinti: <br>${colsHtml}</div>`;
-            panel.querySelector('.filter-body').appendChild(notice);
-        }
-
         updateFilterCountDisplay();
+    }
+
+    // Funzione ricerca con supporto wildcards
+    function filterOptionsSearch(input, colIdx) {
+        const term = input.value.toLowerCase();
+        const optsContainer = document.getElementById(`filterOpts_${colIdx}`);
+        if (!optsContainer) return;
+
+        // Costruzione RegEx
+        let regexStr = term.replace(/[.+?^${}()|[\]\\]/g, '\\$&'); // escape di base
+        if (term.includes('*')) {
+            regexStr = '^' + regexStr.replace(/\\\*/g, '.*') + '$'; // Se usa *, diventa wild match esatto
+        } else if (term !== '') {
+            regexStr = '.*' + regexStr + '.*'; // Se no, include logico
+        }
+        
+        const regex = new RegExp(regexStr || '.*', 'i');
+        const opts = optsContainer.querySelectorAll('.filter-opt');
+        
+        opts.forEach(opt => {
+            const val = opt.getAttribute('data-val');
+            if (regex.test(val)) {
+                opt.style.display = 'flex';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
     }
 
     function onFilterChange(colIdx, val, checked) {
@@ -858,10 +917,14 @@
 
         const opts = $(`filterOpts_${colIdx}`);
         if (opts) {
-            opts.querySelectorAll('.filter-opt').forEach(opt => {
-                const cb = opt.querySelector('input');
-                opt.classList.toggle('unchecked', !cb.checked);
-            });
+            // Cerca l'elemento specifico basandosi sull'attributo per non rompere il DOM
+            const optDivs = opts.querySelectorAll(`.filter-opt`);
+            for (let opt of optDivs) {
+                if (opt.getAttribute('data-val') === val) {
+                    opt.classList.toggle('unchecked', !checked);
+                    break;
+                }
+            }
         }
         updateFilterCountDisplay();
         if (dataIsLoaded) $('recalcBar').classList.add('visible');
@@ -870,14 +933,54 @@
     function toggleFilterCol(colIdx, selectAll) {
         const colConf = filterConfig.get(colIdx);
         if (!colConf) return;
-        colConf.values.forEach(info => { info.checked = selectAll; });
-        renderFilterPanel();
-        if (dataIsLoaded) $('recalcBar').classList.add('visible');
+
+        // Agisce solo sugli elementi VISIBILI in base alla ricerca attuale
+        const group = document.getElementById(`filterOpts_${colIdx}`).closest('.filter-col-group');
+        const searchInput = group.querySelector('.filter-search-input');
+        const term = searchInput ? searchInput.value.toLowerCase() : '';
+
+        let regexStr = term.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+        if (term.includes('*')) {
+            regexStr = '^' + regexStr.replace(/\\\*/g, '.*') + '$';
+        } else if (term !== '') {
+            regexStr = '.*' + regexStr + '.*';
+        }
+        const regex = new RegExp(regexStr || '.*', 'i');
+
+        let changed = false;
+        colConf.values.forEach((info, val) => {
+            if (regex.test(val)) {
+                if (info.checked !== selectAll) {
+                    info.checked = selectAll;
+                    changed = true;
+                }
+            }
+        });
+
+        if (changed) {
+            const optsContainer = document.getElementById(`filterOpts_${colIdx}`);
+            const opts = optsContainer.querySelectorAll('.filter-opt');
+            opts.forEach(opt => {
+                const val = opt.getAttribute('data-val');
+                if (regex.test(val)) {
+                    const cb = opt.querySelector('input');
+                    cb.checked = selectAll;
+                    opt.classList.toggle('unchecked', !selectAll);
+                }
+            });
+            updateFilterCountDisplay();
+            if (dataIsLoaded) $('recalcBar').classList.add('visible');
+        }
     }
 
     function resetAllFilters() {
-        filterConfig.forEach(colConf => {
+        filterConfig.forEach((colConf, colIdx) => {
             colConf.values.forEach(info => { info.checked = true; });
+            const searchInput = document.getElementById(`filterOpts_${colIdx}`).closest('.filter-col-group').querySelector('.filter-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+                filterOptionsSearch(searchInput, colIdx);
+            }
         });
         renderFilterPanel();
         applyFiltersAndRecalc();
