@@ -490,8 +490,8 @@
 <div class="container">
     <header>
         <h1>Analisi Report RND</h1>
-        <span class="badge">Client-Side v4</span>
-        <p>Roadmap Olistica con Filtri Dati, Esclusione Articoli, Rilevamento Anomalie Distinte e Pesi Score Dinamici.</p>
+        <span class="badge">Client-Side v5</span>
+        <p>Roadmap Olistica con metriche coerenti e correzione calcoli statici vs algoritmo.</p>
     </header>
 
     <div class="controls-panel">
@@ -654,7 +654,7 @@
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 <div>
                     <h3>Algoritmo vs Classifica Statica (Pivot)</h3>
-                    <p>La classifica statica ordina gli articoli per "quanti ordini bloccano" senza simulare l'effetto cascata.</p>
+                    <p>La classifica statica ordina gli articoli per "quanti blocchi rimuovono" senza simulare l'effetto cascata.</p>
                 </div>
             </div>
             <div class="comp-body">
@@ -711,7 +711,8 @@
     let currentModalContext = { type: '', arg1: null, arg2: null };
     let colOrderIdx = -1, colPlantIdx = -1, colArticleIdx = -1, colItemCodeIdx = -1, colCoLineIdx = -1;
     let dataIsLoaded = false;
-    let anomalieMiste = []; // Memorizza gli articoli con plant misti nello stesso ordine
+    let anomalieMiste = []; 
+    let orderWeights = new Map(); // Global storage for true order weights
 
     // EXCLUSION STATE
     let excludedArticles = new Set();
@@ -1080,7 +1081,7 @@
     // ═══════════════════════════════════════════
     function processData(data) {
         dictOrdini.clear();
-        anomalieMiste = []; // Reset delle anomalie
+        anomalieMiste = []; 
 
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
@@ -1106,18 +1107,14 @@
             } else {
                 let itemData = orderItems.get(articoloDesc);
                 
-                // Traccia se l'articolo per questo ordine ha varianti di plant miste
                 if (isBra) itemData.hasBra = true;
                 if (!isBra) itemData.hasCor = true;
 
-                // LOGICA RESTRITTIVA (AND logico):
-                // Se c'è anche solo una riga NON a BRA, l'intero articolo scende a false
                 if (!isBra) itemData.isBra = false;
             }
             orderItems.get(articoloDesc).count++;
         }
 
-        // Estrazione anomalie per la UI
         dictOrdini.forEach((orderItems, ordine) => {
             orderItems.forEach((info, articoloDesc) => {
                 if (info.hasBra && info.hasCor) {
@@ -1136,13 +1133,13 @@
     function simulateHolisticRoadmap() {
         dictOrdiniReali.clear();
         currentRoadmap = [];
+        orderWeights.clear();
 
         const countMethod = document.querySelector('input[name="countMethod"]:checked').value;
         const isReal = $('isRealToggle').checked;
         const prefixRaw = $('prefixInput').value.trim();
         const prefixInput = prefixRaw.replace(/%/g, '').replace(/\*/g, '');
 
-        // Fetch dynamic weights from UI inputs (fallback to defaults if invalid)
         const W1 = parseInt($('weight1').value) || 1000000;
         const W2 = parseInt($('weight2').value) || 10000;
         const W3 = parseInt($('weight3').value) || 100;
@@ -1152,11 +1149,13 @@
         let allTargetItems = new Map();
         let permanentlyBlockedOrders = new Set(); 
 
+        // Fase 1: Popolazione Strutture e Calcolo Pesi Ordini
         dictOrdini.forEach((orderItems, ordine) => {
             let isDisqualified = false;
             let missingArticles = [];
             let hasTargetItem = false;
             let hasExcludedBlocker = false; 
+            let orderTargetRows = 0;
 
             orderItems.forEach((info, articoloDesc) => {
                 const matchesPrefix = articoloDesc.includes(prefixInput);
@@ -1164,18 +1163,17 @@
                     if (isReal) isDisqualified = true;
                 } else {
                     hasTargetItem = true;
-                    let weight = (countMethod === 'righe') ? info.count : 1;
+                    orderTargetRows += info.count;
 
                     if (!allTargetItems.has(articoloDesc)) {
-                        allTargetItems.set(articoloDesc, { code: info.code, totalWeight: 0 });
+                        allTargetItems.set(articoloDesc, { code: info.code });
                     }
-                    allTargetItems.get(articoloDesc).totalWeight += weight;
 
                     if (!info.isBra) {
                         if (excludedArticles.has(articoloDesc)) {
                             hasExcludedBlocker = true; 
                         } else {
-                            missingArticles.push({ desc: articoloDesc, weight: weight });
+                            missingArticles.push({ desc: articoloDesc });
                         }
                     }
                 }
@@ -1183,16 +1181,17 @@
 
             if (isDisqualified || !hasTargetItem) return;
 
+            let orderWeight = (countMethod === 'righe') ? orderTargetRows : 1;
+            orderWeights.set(ordine, orderWeight);
+
             if (hasExcludedBlocker) {
                 permanentlyBlockedOrders.add(ordine);
             } else if (missingArticles.length === 0) {
                 dictOrdiniReali.add(ordine);
             } else {
-                activeOrders.set(ordine, missingArticles);
+                activeOrders.set(ordine, { missing: missingArticles, weight: orderWeight });
             }
         });
-
-        $('baselineCount').textContent = dictOrdiniReali.size;
 
         if (excludedArticles.size > 0) {
             dbg(`Articoli esclusi: ${excludedArticles.size} → ${permanentlyBlockedOrders.size} ordini permanentemente bloccati`, 'warn');
@@ -1202,9 +1201,10 @@
         excludedArticles.forEach(ea => itemsToProcess.delete(ea));
 
         let actuallyMissing = new Set();
-        activeOrders.forEach(missing => missing.forEach(m => actuallyMissing.add(m.desc)));
+        activeOrders.forEach(data => data.missing.forEach(m => actuallyMissing.add(m.desc)));
         itemsToProcess.forEach(item => { if (!actuallyMissing.has(item)) itemsToProcess.delete(item); });
 
+        // Fase 2: Simulazione Olistica a Cascata (ALGORITMO)
         while (itemsToProcess.size > 0 && activeOrders.size > 0) {
             let bestItem = null, bestScore = -1, bestStats = null;
 
@@ -1215,13 +1215,14 @@
                 };
                 let score = 0;
 
-                activeOrders.forEach((missingList, ordine) => {
-                    let candidateObj = missingList.find(m => m.desc === candidate);
+                activeOrders.forEach((data, ordine) => {
+                    let candidateObj = data.missing.find(m => m.desc === candidate);
                     if (candidateObj) {
-                        let w = candidateObj.weight;
-                        let missingCount = missingList.length;
+                        let w = data.weight; // IL REWARD ORA È L'INTERO PESO DELL'ORDINE
+                        let missingCount = data.missing.length;
                         stats.totalImpact += w;
                         stats.ordersTotal.push(ordine);
+                        
                         if (missingCount === 1) { stats.p1 += w; score += w * W1; stats.ordersP1.push(ordine); }
                         else if (missingCount === 2) { stats.p2 += w; score += w * W2; stats.ordersP2.push(ordine); }
                         else if (missingCount === 3) { stats.p3 += w; score += w * W3; stats.ordersP3.push(ordine); }
@@ -1238,42 +1239,50 @@
             currentRoadmap.push({ desc: bestItem, stats: bestStats, score: bestScore, breakdown: breakdownStr });
 
             let newlyReadyOrders = [];
-            activeOrders.forEach((missingList, ordine) => {
-                let initialLen = missingList.length;
-                let filteredList = missingList.filter(m => m.desc !== bestItem);
+            activeOrders.forEach((data, ordine) => {
+                let initialLen = data.missing.length;
+                let filteredList = data.missing.filter(m => m.desc !== bestItem);
                 if (filteredList.length === 0 && initialLen > 0) { newlyReadyOrders.push(ordine); }
-                else { activeOrders.set(ordine, filteredList); }
+                else { activeOrders.set(ordine, { missing: filteredList, weight: data.weight }); }
             });
             newlyReadyOrders.forEach(ord => activeOrders.delete(ord));
             itemsToProcess.delete(bestItem);
         }
 
+        // Fase 3: Calcolo Pivot Statico (NAIVE)
         let naiveCumulative = [];
         const showNaive = $('showNaiveToggle').checked;
 
         if (showNaive && currentRoadmap.length > 0) {
             let naiveStaticCounts = new Map();
             let naiveActive = new Map();
+            
+            // Reinizializza gli ordini attivi per il Naive
             dictOrdini.forEach((orderItems, ordine) => {
                 let isDQ = false; let miss = []; let hasT = false; let hasEB = false;
+                let orderTargetRows = 0;
+                
                 orderItems.forEach((info, ad) => {
                     const mp = ad.includes(prefixInput);
                     if (!mp) { if (isReal) isDQ = true; }
                     else {
                         hasT = true;
+                        orderTargetRows += info.count;
                         if (!info.isBra) {
                             if (excludedArticles.has(ad)) hasEB = true;
-                            else miss.push({ desc: ad, weight: (countMethod === 'righe') ? info.count : 1 });
+                            else miss.push({ desc: ad });
                         }
                     }
                 });
                 if (isDQ || !hasT || hasEB) return;
-                if (miss.length > 0) naiveActive.set(ordine, miss);
+                let orderWeight = (countMethod === 'righe') ? orderTargetRows : 1;
+                if (miss.length > 0) naiveActive.set(ordine, { missing: miss, weight: orderWeight });
             });
 
-            naiveActive.forEach((miss) => {
-                miss.forEach(m => {
-                    naiveStaticCounts.set(m.desc, (naiveStaticCounts.get(m.desc) || 0) + 1);
+            // Calcolo Statico
+            naiveActive.forEach((data) => {
+                data.missing.forEach(m => {
+                    naiveStaticCounts.set(m.desc, (naiveStaticCounts.get(m.desc) || 0) + data.weight); // AGGIUNTO IL PESO CORRETTO
                 });
             });
 
@@ -1285,13 +1294,13 @@
             for (const art of naiveOrder) {
                 let unlocked = 0;
                 let toRemove = [];
-                naiveActive.forEach((miss, ord) => {
-                    let filtered = miss.filter(m => m.desc !== art);
-                    if (filtered.length === 0 && miss.length > 0) {
-                        unlocked++;
+                naiveActive.forEach((data, ord) => {
+                    let filtered = data.missing.filter(m => m.desc !== art);
+                    if (filtered.length === 0 && data.missing.length > 0) {
+                        unlocked += data.weight; // SOMMA IL PESO DELL'INTERO ORDINE
                         toRemove.push(ord);
                     } else {
-                        naiveActive.set(ord, filtered);
+                        naiveActive.set(ord, { missing: filtered, weight: data.weight });
                     }
                 });
                 toRemove.forEach(o => naiveActive.delete(o));
@@ -1303,7 +1312,9 @@
         let algoCumulative = [];
         { let c = 0; currentRoadmap.forEach(item => { c += item.stats.p1; algoCumulative.push(c); }); }
 
+        // ==========================================
         // RENDER UI & ANOMALY ALERT
+        // ==========================================
         const alertPanel = $('anomalyAlert');
         if (anomalieMiste.length > 0) {
             $('anomalyCount').textContent = anomalieMiste.length;
@@ -1312,11 +1323,24 @@
             alertPanel.classList.remove('visible');
         }
 
+        const lblUnit = countMethod === 'righe' ? 'Righe' : 'Ordini';
+        const lblUnitLower = countMethod === 'righe' ? 'righe' : 'ordini';
+        
+        document.querySelector('.baseline-label h2').textContent = `${lblUnit} Base (Già a BRA)`;
+        document.querySelector('.baseline-label p').textContent = `${lblUnit} senza blocchi all'inizio della simulazione`;
+
+        let baselineVal = 0;
+        dictOrdiniReali.forEach(ord => baselineVal += orderWeights.get(ord));
+        $('baselineCount').textContent = baselineVal;
+
+        let permBlockedWeight = 0;
+        permanentlyBlockedOrders.forEach(ord => permBlockedWeight += orderWeights.get(ord));
+
         let exclChipHtml = '';
         if (excludedArticles.size > 0) {
             exclChipHtml = `<div class="stat-chip stat-excluded">
-                <span class="stat-num">${permanentlyBlockedOrders.size}</span>
-                <span class="stat-label">Ordini Perm. Bloccati (articoli esclusi)</span>
+                <span class="stat-num">${permBlockedWeight}</span>
+                <span class="stat-label">${lblUnit} Perm. Bloccati (esclusi)</span>
             </div>`;
         }
 
@@ -1408,30 +1432,29 @@
                         <span class="cm-vs">vs</span>
                         <span class="cm-naive">${naiveVal}</span>
                     </div>
-                    <div class="cm-delta ${deltaClass}">${deltaSign}${delta} ordini</div>
+                    <div class="cm-delta ${deltaClass}">${deltaSign}${delta} ${lblUnitLower}</div>
                 </div>`;
             }
             milestones.innerHTML = milestonesHtml;
 
-            const baselineN = dictOrdiniReali.size;
             const finalDelta = totalAlgo - totalNaive;
             if (finalDelta > 0) {
                 verdict.className = 'comp-verdict';
                 verdict.innerHTML = `<span class="cv-icon">🏆</span><div class="cv-text">
-                    L'algoritmo sblocca <strong>${finalDelta} ordini in più</strong> rispetto alla classifica statica.
-                    Il vantaggio massimo è di <strong>${maxDelta} ordini allo step ${maxDeltaStep}</strong>.
-                    Su un totale di ${baselineN + totalAlgo} ordini producibili a BRA, l'algoritmo arriva prima e meglio.
+                    L'algoritmo sblocca <strong>${finalDelta} ${lblUnitLower} in più</strong> rispetto alla classifica statica.
+                    Il vantaggio massimo è di <strong>${maxDelta} ${lblUnitLower} allo step ${maxDeltaStep}</strong>.
+                    Su un totale di ${baselineVal + totalAlgo} ${lblUnitLower} producibili a BRA, l'algoritmo arriva prima e meglio.
                 </div>`;
             } else if (finalDelta === 0) {
                 verdict.className = 'comp-verdict is-tie';
                 verdict.innerHTML = `<span class="cv-icon">🤝</span><div class="cv-text">
-                    A fine percorso i due metodi sbloccano lo stesso numero di ordini (<strong>${totalAlgo}</strong>).
-                    ${maxDelta > 0 ? `Però l'algoritmo ci arriva <strong>${maxDelta} ordini prima allo step ${maxDeltaStep}</strong> — tempo guadagnato per BRA.` : 'I due percorsi sono equivalenti su questo dataset.'}
+                    A fine percorso i due metodi sbloccano lo stesso numero di ${lblUnitLower} (<strong>${totalAlgo}</strong>).
+                    ${maxDelta > 0 ? `Però l'algoritmo ci arriva <strong>${maxDelta} ${lblUnitLower} prima allo step ${maxDeltaStep}</strong> — tempo guadagnato per BRA.` : 'I due percorsi sono equivalenti su questo dataset.'}
                 </div>`;
             } else {
                 verdict.className = 'comp-verdict';
                 verdict.innerHTML = `<span class="cv-icon">📊</span><div class="cv-text">
-                    Su questo dataset la classifica statica sblocca ${-finalDelta} ordini in più a fine percorso.
+                    Su questo dataset la classifica statica sblocca ${-finalDelta} ${lblUnitLower} in più a fine percorso.
                     Questo può accadere quando la distribuzione dei blocchi è molto uniforme.
                 </div>`;
             }
@@ -1504,7 +1527,7 @@
     }
 
     function renderModalData(hdrs, rows, customInfoPrefix) {
-        let infoStr = `${rows.length} righe — ${new Set(rows.map(r => String(r[colOrderIdx] || "").trim())).size} ordini`;
+        let infoStr = `${rows.length} righe visibili in estrazione — ${new Set(rows.map(r => String(r[colOrderIdx] || "").trim())).size} ordini totali associati`;
         if (customInfoPrefix) infoStr = `<strong style="color:var(--purple);">${customInfoPrefix}</strong><br>` + infoStr;
         $('modalInfo').innerHTML = infoStr;
         const thead = $('modalThead'), tbody = $('modalTbody');
