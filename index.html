@@ -490,8 +490,8 @@
 <div class="container">
     <header>
         <h1>Analisi Report RND</h1>
-        <span class="badge">Client-Side v5</span>
-        <p>Roadmap Olistica con metriche coerenti e correzione calcoli statici vs algoritmo.</p>
+        <span class="badge">Client-Side v5.1</span>
+        <p>Roadmap Olistica con metriche coerenti e reportistica di dettaglio per algoritmo Greedy e classifica Pivot statica.</p>
     </header>
 
     <div class="controls-panel">
@@ -526,7 +526,7 @@
                     </div>
                     <div class="toggle-text">
                         <strong>Confronto Pivot</strong>
-                        <small>Mostra algoritmo vs statica.</small>
+                        <small>Mostra report di dettaglio classifica statica vs algoritmo.</small>
                     </div>
                 </label>
             </div>
@@ -654,7 +654,7 @@
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 <div>
                     <h3>Algoritmo vs Classifica Statica (Pivot)</h3>
-                    <p>La classifica statica ordina gli articoli per "quanti blocchi rimuovono" senza simulare l'effetto cascata.</p>
+                    <p>La classifica statica ordina gli articoli per "quanti blocchi rimuovono in assoluto" senza valutare l'effetto a cascata. Di seguito l'andamento comparato.</p>
                 </div>
             </div>
             <div class="comp-body">
@@ -663,23 +663,42 @@
             </div>
         </div>
 
-        <div class="table-card">
+        <div class="table-card" id="algoTableCard">
             <div class="table-header">
-                <h2>Roadmap Insegnamento BRA (Simulazione)</h2>
-                <p>Clicca sui numeri per il dettaglio ordini. Usa il pulsante ⊘ per escludere articoli non industrializzabili.</p>
+                <h2>Roadmap Insegnamento BRA (Simulazione Algoritmo Greedy)</h2>
+                <p>Ordina per il massimo punteggio ad ogni step (premio per sblocco immediato). Clicca sui numeri per il dettaglio.</p>
             </div>
             <div class="table-wrap">
                 <table>
                     <thead><tr>
                         <th>Step</th><th>Codice Articolo</th><th>Descrizione Articolo</th>
                         <th>Sblocca Subito</th><th>Avanza a 1</th><th>Avanza a 2</th><th>>3</th>
-                        <th class="col-total">Tot.</th><th class="col-score">Score</th>
+                        <th class="col-total">Tot.</th><th class="col-score">Score Algoritmo</th>
                         <th class="col-action">Escludi</th>
                     </tr></thead>
                     <tbody id="reportTableBody"></tbody>
                 </table>
             </div>
         </div>
+
+        <div class="table-card" id="naiveTableCard" style="display:none; margin-top: 30px; border-color: var(--amber-border);">
+            <div class="table-header" style="background: var(--amber-bg); border-bottom: 1px solid var(--amber-border);">
+                <h2 style="color: #92400e;">Roadmap Statica (Modalità Pivot)</h2>
+                <p style="color: #b45309;">Ordina l'insegnamento per il numero totale di blocchi che l'articolo genera in assoluto, simulandone comunque lo sblocco progressivo.</p>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr>
+                        <th>Step</th><th>Codice Articolo</th><th>Descrizione Articolo</th>
+                        <th>Sblocca Subito</th><th>Avanza a 1</th><th>Avanza a 2</th><th>>3</th>
+                        <th class="col-total">Tot.</th><th class="col-score" style="background: #fef3c7; color: #b45309;">Blocchi Assoluti</th>
+                        <th class="col-action">Escludi</th>
+                    </tr></thead>
+                    <tbody id="naiveTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -707,8 +726,9 @@
     let originalRows = [];
     let currentWorkbook = null;
     let currentRoadmap = [];
+    let naiveRoadmap = []; // Added for Pivot Drill-down
     let currentExportData = [];
-    let currentModalContext = { type: '', arg1: null, arg2: null };
+    let currentModalContext = { type: '', arg1: null, arg2: null, isNaive: false };
     let colOrderIdx = -1, colPlantIdx = -1, colArticleIdx = -1, colItemCodeIdx = -1, colCoLineIdx = -1;
     let dataIsLoaded = false;
     let anomalieMiste = []; 
@@ -1133,6 +1153,7 @@
     function simulateHolisticRoadmap() {
         dictOrdiniReali.clear();
         currentRoadmap = [];
+        naiveRoadmap = [];
         orderWeights.clear();
 
         const countMethod = document.querySelector('input[name="countMethod"]:checked').value;
@@ -1249,7 +1270,7 @@
             itemsToProcess.delete(bestItem);
         }
 
-        // Fase 3: Calcolo Pivot Statico (NAIVE)
+        // Fase 3: Calcolo Pivot Statico (NAIVE) con generazione completa Report
         let naiveCumulative = [];
         const showNaive = $('showNaiveToggle').checked;
 
@@ -1279,25 +1300,51 @@
                 if (miss.length > 0) naiveActive.set(ordine, { missing: miss, weight: orderWeight });
             });
 
-            // Calcolo Statico
+            // Calcolo Conteggi Statici Assoluti
             naiveActive.forEach((data) => {
                 data.missing.forEach(m => {
-                    naiveStaticCounts.set(m.desc, (naiveStaticCounts.get(m.desc) || 0) + data.weight); // AGGIUNTO IL PESO CORRETTO
+                    naiveStaticCounts.set(m.desc, (naiveStaticCounts.get(m.desc) || 0) + data.weight);
                 });
             });
 
+            // Generazione Classifica Naive (statica desc)
             let naiveOrder = [...naiveStaticCounts.entries()]
                 .sort((a, b) => b[1] - a[1])
                 .map(e => e[0]);
 
             let naiveCum = 0;
             for (const art of naiveOrder) {
+                // Generazione Report Dettagliato Naive
+                let stats = {
+                    p1: 0, p2: 0, p3: 0, p4: 0, code: allTargetItems.get(art).code, totalImpact: 0,
+                    ordersP1: [], ordersP2: [], ordersP3: [], ordersP4: [], ordersTotal: []
+                };
+                let score = naiveStaticCounts.get(art); // Il punteggio qui è il semplice conteggio statico
+
+                naiveActive.forEach((data, ordine) => {
+                    let candidateObj = data.missing.find(m => m.desc === art);
+                    if (candidateObj) {
+                        let w = data.weight;
+                        let missingCount = data.missing.length;
+                        stats.totalImpact += w;
+                        stats.ordersTotal.push(ordine);
+                        
+                        if (missingCount === 1) { stats.p1 += w; stats.ordersP1.push(ordine); }
+                        else if (missingCount === 2) { stats.p2 += w; stats.ordersP2.push(ordine); }
+                        else if (missingCount === 3) { stats.p3 += w; stats.ordersP3.push(ordine); }
+                        else { stats.p4 += w; stats.ordersP4.push(ordine); }
+                    }
+                });
+
+                naiveRoadmap.push({ desc: art, stats: stats, score: score, breakdown: "Conteggio statico blocchi in assoluto" });
+
+                // Sblocco a cascata simulato statitcamente
                 let unlocked = 0;
                 let toRemove = [];
                 naiveActive.forEach((data, ord) => {
                     let filtered = data.missing.filter(m => m.desc !== art);
                     if (filtered.length === 0 && data.missing.length > 0) {
-                        unlocked += data.weight; // SOMMA IL PESO DELL'INTERO ORDINE
+                        unlocked += data.weight; 
                         toRemove.push(ord);
                     } else {
                         naiveActive.set(ord, { missing: filtered, weight: data.weight });
@@ -1364,36 +1411,68 @@
             $('exclImpact').textContent = '';
         }
 
-        const tbody = $('reportTableBody');
-        tbody.innerHTML = '';
-
+        // TABELLA ALGORITMO
+        const tbodyAlgo = $('reportTableBody');
+        tbodyAlgo.innerHTML = '';
         if (currentRoadmap.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
+            tbodyAlgo.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);font-style:italic;">
                 Tutti gli ordini validi sono già producibili a BRA o permanentemente bloccati. Non serve alcuna Roadmap.
             </td></tr>`;
         } else {
-            const fragment = document.createDocumentFragment();
+            const fragmentAlgo = document.createDocumentFragment();
             currentRoadmap.forEach((itemData, index) => {
                 const s = itemData.stats;
                 const artDesc = itemData.desc;
                 const tr = document.createElement('tr');
 
-                const cellP1 = s.p1 > 0 ? `<td><span class="success-val clickable-green" onclick="triggerDrillDown('sim_priority', ${index}, 1)">+${s.p1}</span></td>` : `<td class="zero-val">0</td>`;
-                const cellP2 = s.p2 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 2)">${s.p2}</td>` : `<td class="zero-val">0</td>`;
-                const cellP3 = s.p3 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 3)">${s.p3}</td>` : `<td class="zero-val">0</td>`;
-                const cellP4 = s.p4 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 4)">${s.p4}</td>` : `<td class="zero-val">0</td>`;
-                const cellTot = s.totalImpact > 0 ? `<td class="col-total clickable" onclick="triggerDrillDown('sim_priority', ${index}, 0)">${s.totalImpact}</td>` : `<td class="col-total zero-val">0</td>`;
-                const cellScore = `<td class="col-score"><span class="clickable-purple" onclick="triggerDrillDown('score', ${index}, null)">${itemData.score.toLocaleString()}</span></td>`;
+                const cellP1 = s.p1 > 0 ? `<td><span class="success-val clickable-green" onclick="triggerDrillDown('sim_priority', ${index}, 1, false)">+${s.p1}</span></td>` : `<td class="zero-val">0</td>`;
+                const cellP2 = s.p2 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 2, false)">${s.p2}</td>` : `<td class="zero-val">0</td>`;
+                const cellP3 = s.p3 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 3, false)">${s.p3}</td>` : `<td class="zero-val">0</td>`;
+                const cellP4 = s.p4 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 4, false)">${s.p4}</td>` : `<td class="zero-val">0</td>`;
+                const cellTot = s.totalImpact > 0 ? `<td class="col-total clickable" onclick="triggerDrillDown('sim_priority', ${index}, 0, false)">${s.totalImpact}</td>` : `<td class="col-total zero-val">0</td>`;
+                const cellScore = `<td class="col-score"><span class="clickable-purple" onclick="triggerDrillDown('score', ${index}, null, false)">${itemData.score.toLocaleString()}</span></td>`;
                 const cellExcl = `<td><button class="btn-exclude" onclick="excludeArticle('${artDesc.replace(/'/g, "\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>Escludi</button></td>`;
 
                 tr.innerHTML =
                     `<td>${index + 1}</td>` +
                     `<td>${s.code}</td>` +
-                    `<td><span class="clickable" onclick="triggerDrillDown('item', '${artDesc.replace(/'/g, "\\'")}')" title="Ordini bloccati da questo articolo">${artDesc}</span></td>` +
+                    `<td><span class="clickable" onclick="triggerDrillDown('item', '${artDesc.replace(/'/g, "\\'")}', null, false)" title="Ordini bloccati da questo articolo">${artDesc}</span></td>` +
                     cellP1 + cellP2 + cellP3 + cellP4 + cellTot + cellScore + cellExcl;
-                fragment.appendChild(tr);
+                fragmentAlgo.appendChild(tr);
             });
-            tbody.appendChild(fragment);
+            tbodyAlgo.appendChild(fragmentAlgo);
+        }
+
+        // TABELLA NAIVE PIVOT
+        const tbodyNaive = $('naiveTableBody');
+        tbodyNaive.innerHTML = '';
+        const naiveCard = $('naiveTableCard');
+        if (showNaive && naiveRoadmap.length > 0) {
+            naiveCard.style.display = 'block';
+            const fragmentNaive = document.createDocumentFragment();
+            naiveRoadmap.forEach((itemData, index) => {
+                const s = itemData.stats;
+                const artDesc = itemData.desc;
+                const tr = document.createElement('tr');
+
+                const cellP1 = s.p1 > 0 ? `<td><span class="success-val clickable-green" onclick="triggerDrillDown('sim_priority', ${index}, 1, true)">+${s.p1}</span></td>` : `<td class="zero-val">0</td>`;
+                const cellP2 = s.p2 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 2, true)">${s.p2}</td>` : `<td class="zero-val">0</td>`;
+                const cellP3 = s.p3 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 3, true)">${s.p3}</td>` : `<td class="zero-val">0</td>`;
+                const cellP4 = s.p4 > 0 ? `<td class="clickable" onclick="triggerDrillDown('sim_priority', ${index}, 4, true)">${s.p4}</td>` : `<td class="zero-val">0</td>`;
+                const cellTot = s.totalImpact > 0 ? `<td class="col-total clickable" onclick="triggerDrillDown('sim_priority', ${index}, 0, true)">${s.totalImpact}</td>` : `<td class="col-total zero-val">0</td>`;
+                const cellScore = `<td class="col-score" style="background: #fef3c7; color: #b45309;"><span class="clickable-purple" style="color: #92400e;" onclick="triggerDrillDown('score', ${index}, null, true)">${itemData.score.toLocaleString()}</span></td>`;
+                const cellExcl = `<td><button class="btn-exclude" onclick="excludeArticle('${artDesc.replace(/'/g, "\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>Escludi</button></td>`;
+
+                tr.innerHTML =
+                    `<td>${index + 1}</td>` +
+                    `<td>${s.code}</td>` +
+                    `<td><span class="clickable" onclick="triggerDrillDown('item', '${artDesc.replace(/'/g, "\\'")}', null, true)" title="Ordini bloccati da questo articolo">${artDesc}</span></td>` +
+                    cellP1 + cellP2 + cellP3 + cellP4 + cellTot + cellScore + cellExcl;
+                fragmentNaive.appendChild(tr);
+            });
+            tbodyNaive.appendChild(fragmentNaive);
+        } else {
+            naiveCard.style.display = 'none';
         }
 
         const compCard = $('comparisonCard');
@@ -1470,11 +1549,13 @@
     // ═══════════════════════════════════════════
     //  DRILL-DOWN & EXPORT
     // ═══════════════════════════════════════════
-    function triggerDrillDown(type, arg1, arg2) {
+    function triggerDrillDown(type, arg1, arg2, isNaive = false) {
         const targetOrders = new Set();
         const targetAnomalies = new Set();
-        currentModalContext = { type, arg1, arg2 };
+        currentModalContext = { type, arg1, arg2, isNaive };
         let customModalInfo = null;
+
+        const activeRoadmap = isNaive ? naiveRoadmap : currentRoadmap;
 
         if (type === 'baseline') {
             $('modalTitle').textContent = "Dettaglio: Ordini Base (Pronti all'inizio)";
@@ -1487,19 +1568,20 @@
             });
         } else if (type === 'sim_priority') {
             const stepIndex = arg1, priorityLevel = arg2;
-            const stepData = currentRoadmap[stepIndex];
+            const stepData = activeRoadmap[stepIndex];
             let orderList = [], prioLabel = "";
             if (priorityLevel === 1) { orderList = stepData.stats.ordersP1; prioLabel = "Sblocca Subito"; }
             else if (priorityLevel === 2) { orderList = stepData.stats.ordersP2; prioLabel = "Avanzano a 1 blocco"; }
             else if (priorityLevel === 3) { orderList = stepData.stats.ordersP3; prioLabel = "Avanzano a 2 blocchi"; }
             else if (priorityLevel === 4) { orderList = stepData.stats.ordersP4; prioLabel = "Restano >3 blocchi"; }
             else if (priorityLevel === 0) { orderList = stepData.stats.ordersTotal; prioLabel = "Totale impatto"; }
-            $('modalTitle').textContent = `Step ${stepIndex + 1} - ${stepData.desc} (${prioLabel})`;
+            
+            $('modalTitle').textContent = `Step ${stepIndex + 1} - ${stepData.desc} (${prioLabel}) ${isNaive ? '[Pivot]' : '[Algoritmo]'}`;
             orderList.forEach(ord => targetOrders.add(ord));
         } else if (type === 'score') {
-            const stepIndex = arg1, stepData = currentRoadmap[stepIndex];
-            $('modalTitle').textContent = `Score Step ${stepIndex + 1}`;
-            customModalInfo = `Formula: ${stepData.breakdown} = ${stepData.score.toLocaleString()}`;
+            const stepIndex = arg1, stepData = activeRoadmap[stepIndex];
+            $('modalTitle').textContent = `Score Step ${stepIndex + 1} ${isNaive ? '[Pivot]' : '[Algoritmo]'}`;
+            customModalInfo = `Info: ${stepData.breakdown} = ${stepData.score.toLocaleString()}`;
             stepData.stats.ordersTotal.forEach(ord => targetOrders.add(ord));
         } else if (type === 'anomalies') {
             $('modalTitle').textContent = "Dettaglio: Articoli con distinte miste";
@@ -1559,11 +1641,14 @@
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Dettaglio");
         const ts = new Date().toTimeString().slice(0,8).replace(/:/g,'');
+        
         let fn = "Export.xlsx";
+        let pfx = currentModalContext.isNaive ? 'Pivot_' : '';
+
         if (currentModalContext.type === 'baseline') fn = `OrdiniPronti_${ts}.xlsx`;
         else if (currentModalContext.type === 'item') fn = `${currentModalContext.arg1.replace(/[%/\\]/g,"").substring(0,10)}_${ts}.xlsx`;
-        else if (currentModalContext.type === 'sim_priority') fn = `Step${currentModalContext.arg1+1}_P${currentModalContext.arg2}_${ts}.xlsx`;
-        else if (currentModalContext.type === 'score') fn = `Step${currentModalContext.arg1+1}_Score_${ts}.xlsx`;
+        else if (currentModalContext.type === 'sim_priority') fn = `${pfx}Step${currentModalContext.arg1+1}_P${currentModalContext.arg2}_${ts}.xlsx`;
+        else if (currentModalContext.type === 'score') fn = `${pfx}Step${currentModalContext.arg1+1}_Score_${ts}.xlsx`;
         else if (currentModalContext.type === 'anomalies') fn = `AnomalieDistinteMiste_${ts}.xlsx`;
         XLSX.writeFile(wb, fn);
     }
