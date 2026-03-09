@@ -904,32 +904,61 @@
         updateFilterCountDisplay();
     }
 
-    // Funzione ricerca con supporto wildcards
+   // Funzione ricerca con supporto wildcards e auto-defalco (stile Excel)
     function filterOptionsSearch(input, colIdx) {
         const term = input.value.toLowerCase();
         const optsContainer = document.getElementById(`filterOpts_${colIdx}`);
         if (!optsContainer) return;
 
-        // Costruzione RegEx
-        let regexStr = term.replace(/[.+?^${}()|[\]\\]/g, '\\$&'); // escape di base
-        if (term.includes('*')) {
-            regexStr = '^' + regexStr.replace(/\\\*/g, '.*') + '$'; // Se usa *, diventa wild match esatto
-        } else if (term !== '') {
-            regexStr = '.*' + regexStr + '.*'; // Se no, include logico
+        // 1. Correzione RegExp per il carattere Jolly (*)
+        // Faccio l'escape di tutti i caratteri speciali TRANNE l'asterisco
+        let regexStr = term.replace(/[.+?^${}()|[\]\\]/g, '\\$&'); 
+        if (regexStr.includes('*')) {
+            regexStr = '^' + regexStr.replace(/\*/g, '.*') + '$'; // L'asterisco diventa wild match
+        } else if (regexStr !== '') {
+            regexStr = '.*' + regexStr + '.*'; // Altrimenti match parziale classico
         }
         
         const regex = new RegExp(regexStr || '.*', 'i');
+        const colConf = filterConfig.get(colIdx);
+        let changed = false;
+
         const opts = optsContainer.querySelectorAll('.filter-opt');
         
+        // 2. Aggiornamento visibilità
         opts.forEach(opt => {
             const val = opt.getAttribute('data-val');
-            if (regex.test(val)) {
-                opt.style.display = 'flex';
-            } else {
-                opt.style.display = 'none';
-            }
+            const isMatch = regex.test(val);
+            opt.style.display = isMatch ? 'flex' : 'none';
         });
+
+        // 3. Comportamento Excel: se l'utente sta filtrando, defalca i non inclusi
+        if (term !== '') {
+            colConf.values.forEach((info, val) => {
+                const isMatch = regex.test(val);
+                // Seleziona i match e deseleziona automaticamente gli altri
+                if (info.checked !== isMatch) {
+                    info.checked = isMatch;
+                    changed = true;
+                }
+            });
+
+            // Aggiorna visivamente le checkbox
+            opts.forEach(opt => {
+                const val = opt.getAttribute('data-val');
+                const isMatch = regex.test(val);
+                const cb = opt.querySelector('input');
+                cb.checked = isMatch;
+                opt.classList.toggle('unchecked', !isMatch);
+            });
+        }
+
+        if (changed) {
+            updateFilterCountDisplay();
+            if (dataIsLoaded) $('recalcBar').classList.add('visible');
+        }
     }
+    
 
     function onFilterChange(colIdx, val, checked) {
         const colConf = filterConfig.get(colIdx);
@@ -951,28 +980,37 @@
         if (dataIsLoaded) $('recalcBar').classList.add('visible');
     }
 
+// Aggiornata anche per supportare il nuovo escape e defalcare in modo corretto
     function toggleFilterCol(colIdx, selectAll) {
         const colConf = filterConfig.get(colIdx);
         if (!colConf) return;
 
-        // Agisce solo sugli elementi VISIBILI in base alla ricerca attuale
         const group = document.getElementById(`filterOpts_${colIdx}`).closest('.filter-col-group');
         const searchInput = group.querySelector('.filter-search-input');
         const term = searchInput ? searchInput.value.toLowerCase() : '';
 
+        // Stessa logica RegExp corretta
         let regexStr = term.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
-        if (term.includes('*')) {
-            regexStr = '^' + regexStr.replace(/\\\*/g, '.*') + '$';
-        } else if (term !== '') {
+        if (regexStr.includes('*')) {
+            regexStr = '^' + regexStr.replace(/\*/g, '.*') + '$';
+        } else if (regexStr !== '') {
             regexStr = '.*' + regexStr + '.*';
         }
         const regex = new RegExp(regexStr || '.*', 'i');
 
         let changed = false;
         colConf.values.forEach((info, val) => {
-            if (regex.test(val)) {
-                if (info.checked !== selectAll) {
-                    info.checked = selectAll;
+            const isMatch = regex.test(val);
+            if (selectAll) {
+                // Seleziona i match e DESELEZIONA quelli che non corrispondono alla ricerca
+                if (info.checked !== isMatch) {
+                    info.checked = isMatch;
+                    changed = true;
+                }
+            } else {
+                // Deseleziona solo se corrisponde
+                if (isMatch && info.checked) {
+                    info.checked = false;
                     changed = true;
                 }
             }
@@ -983,10 +1021,17 @@
             const opts = optsContainer.querySelectorAll('.filter-opt');
             opts.forEach(opt => {
                 const val = opt.getAttribute('data-val');
-                if (regex.test(val)) {
-                    const cb = opt.querySelector('input');
-                    cb.checked = selectAll;
-                    opt.classList.toggle('unchecked', !selectAll);
+                const isMatch = regex.test(val);
+                const cb = opt.querySelector('input');
+                
+                if (selectAll) {
+                    cb.checked = isMatch;
+                    opt.classList.toggle('unchecked', !isMatch);
+                } else {
+                    if (isMatch) {
+                        cb.checked = false;
+                        opt.classList.add('unchecked');
+                    }
                 }
             });
             updateFilterCountDisplay();
