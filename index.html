@@ -265,11 +265,15 @@
             gap: 16px;
         }
         
-        /* Updated Filter Group for Collapsible + Search */
+        /* Updated Filter Group for Collapsible + Search + Active State */
         .filter-col-group {
             background: var(--surface-alt); border: 1px solid var(--border);
             border-radius: 8px; display: flex; flex-direction: column;
-            overflow: hidden;
+            overflow: hidden; transition: all 0.2s;
+        }
+        .filter-col-group.has-active-filters {
+            border-color: var(--amber);
+            background: var(--amber-bg);
         }
         .filter-col-header-bar {
             padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
@@ -277,6 +281,13 @@
             transition: background 0.15s;
         }
         .filter-col-header-bar:hover { background: #eef0f4; }
+        .filter-col-group.has-active-filters .filter-col-header-bar {
+            background: var(--amber-bg);
+        }
+        .filter-col-group.has-active-filters .filter-col-header-bar:hover {
+            background: #fde68a;
+        }
+        
         .filter-col-title-left {
             display: flex; align-items: center; gap: 8px; font-size: 0.72rem;
             font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
@@ -286,12 +297,22 @@
         .filter-col-chevron-inner { transition: transform 0.2s; color: var(--text-muted); }
         .filter-col-group.collapsed .filter-col-chevron-inner { transform: rotate(-90deg); }
         
+        .filter-col-status {
+            display: none; font-size: 0.65rem; color: #b45309; font-weight: 700;
+            margin-left: 6px; padding: 2px 6px; background: #fef3c7;
+            border-radius: 4px; border: 1px solid #fde68a;
+        }
+        .filter-col-group.has-active-filters .filter-col-status { display: inline-block; }
+        
         .filter-col-actions { display: flex; gap: 6px; }
         .filter-col-actions button {
             font-size: 0.65rem; font-weight: 600; padding: 2px 6px;
             border-radius: 4px; border: 1px solid var(--border);
             background: var(--surface); color: var(--text-muted);
             cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .filter-col-group.has-active-filters .filter-col-actions button {
+            border-color: var(--amber-border);
         }
         .filter-col-actions button:hover { border-color: var(--accent); color: var(--accent); }
         
@@ -302,6 +323,7 @@
         .filter-col-group.collapsed .filter-body-wrapper { display: none; }
         
         .filter-search-wrap { padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+        .filter-col-group.has-active-filters .filter-search-wrap { border-bottom-color: var(--amber-border); }
         .filter-search-input {
             width: 100%; padding: 6px 10px; font-family: 'DM Sans', sans-serif;
             font-size: 0.8rem; border: 1px solid var(--border); border-radius: 6px;
@@ -316,6 +338,7 @@
             transition: background 0.1s; font-size: 0.82rem;
         }
         .filter-opt:hover { background: var(--surface); }
+        .filter-col-group.has-active-filters .filter-opt:hover { background: #fef3c7; }
         .filter-opt input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
         .filter-opt label { cursor: pointer; flex: 1; color: var(--text-secondary); display: flex; justify-content: space-between; word-break: break-all; }
         .filter-opt label .filter-val-count {
@@ -690,7 +713,7 @@
 
         <div class="table-card" id="algoTableCard">
             <div class="table-header">
-                <h2>Roadmap Insegnamento BRA (Simulazione Algoritmo Greedy)</h2>
+                <h2>Roadmap Industrializzazione BRA (Simulazione Algoritmo Greedy)</h2>
                 <p>Ordina per il massimo punteggio ad ogni step (premio per sblocco immediato). Clicca sui numeri per il dettaglio.</p>
             </div>
             <div class="table-wrap">
@@ -709,7 +732,7 @@
         <div class="table-card" id="naiveTableCard" style="display:none; margin-top: 30px; border-color: var(--amber-border);">
             <div class="table-header" style="background: var(--amber-bg); border-bottom: 1px solid var(--amber-border);">
                 <h2 style="color: #92400e;">Roadmap Statica (Modalità Pivot)</h2>
-                <p style="color: #b45309;">Ordina l'insegnamento per il numero totale di blocchi che l'articolo genera in assoluto, simulandone comunque lo sblocco progressivo.</p>
+                <p style="color: #b45309;">Ordina l'industrializzazione per il numero totale di blocchi che l'articolo genera in assoluto, simulandone comunque lo sblocco progressivo.</p>
             </div>
             <div class="table-wrap">
                 <table>
@@ -790,7 +813,6 @@
             }
 
             const distinct = valCounts.size;
-            // Rimosso il tetto massimo, teniamo solo il minimo di 2 valori distinti per evitare filtri inutili
             if (distinct >= MIN_DISTINCT) {
                 const values = new Map();
                 const sorted = [...valCounts.entries()].sort((a, b) => b[1] - a[1]);
@@ -832,6 +854,7 @@
                 <div class="filter-col-title-left">
                     <svg class="filter-col-chevron-inner" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     <span><strong>${colConf.header}</strong> (${colConf.values.size})</span>
+                    <span class="filter-col-status">FILTRATO</span>
                 </div>
                 <span class="filter-col-actions">
                     <button onclick="toggleFilterCol(${colIdx}, true); event.stopPropagation();">Tutti</button>
@@ -865,7 +888,6 @@
                 opt.setAttribute('data-val', val); // Serve per il filter della search
                 
                 const id = `f_${colIdx}_${optCount}`;
-                // Attenzione a passare il valore al JS in modo pulito
                 opt.innerHTML = `<input type="checkbox" id="${id}" ${info.checked ? 'checked' : ''} 
                     onchange="onFilterChange(${colIdx}, '${val.replace(/'/g, "\\'")}', this.checked)">
                     <label for="${id}"><span>${val}</span><span class="filter-val-count">${info.count}</span></label>`;
@@ -917,7 +939,6 @@
 
         const opts = $(`filterOpts_${colIdx}`);
         if (opts) {
-            // Cerca l'elemento specifico basandosi sull'attributo per non rompere il DOM
             const optDivs = opts.querySelectorAll(`.filter-opt`);
             for (let opt of optDivs) {
                 if (opt.getAttribute('data-val') === val) {
@@ -992,10 +1013,19 @@
 
     function updateFilterCountDisplay() {
         let activeFilters = 0;
-        filterConfig.forEach(colConf => {
+        
+        filterConfig.forEach((colConf, colIdx) => {
             const total = colConf.values.size;
             const checked = [...colConf.values.values()].filter(v => v.checked).length;
-            if (checked < total) activeFilters++;
+            const optsContainer = document.getElementById(`filterOpts_${colIdx}`);
+            const groupEl = optsContainer ? optsContainer.closest('.filter-col-group') : null;
+
+            if (checked < total) {
+                activeFilters++;
+                if (groupEl) groupEl.classList.add('has-active-filters');
+            } else {
+                if (groupEl) groupEl.classList.remove('has-active-filters');
+            }
         });
 
         const badge = $('filterBadge');
@@ -1009,12 +1039,13 @@
         }
 
         const count = countFilteredRows();
-        const total = originalRows.length - 1;
+        const total = originalRows.length > 0 ? originalRows.length - 1 : 0;
         $('filterRowCount').innerHTML = `<strong>${count.toLocaleString()}</strong> / ${total.toLocaleString()} righe`;
     }
 
     function countFilteredRows() {
         let count = 0;
+        if (!originalRows) return 0;
         for (let r = 1; r < originalRows.length; r++) {
             if (rowPassesFilters(originalRows[r])) count++;
         }
